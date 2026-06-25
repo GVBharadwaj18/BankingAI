@@ -1,0 +1,75 @@
+name: topic_router
+routes:
+- name: technology
+  references:
+  - What's the latest in AI?
+  - Tell me about machine learning
+  - How does cloud computing work?
+  - Explain quantum computers
+  - What are the newest programming languages?
+  - How do neural networks function?
+  - What is blockchain technology?
+  - What is artificial general intelligence?
+  - Explain reinforcement learning
+  metadata:
+    category: tech
+    handler: tech_handler
+  distance_threshold: 0.35
+- name: sports
+  references:
+  - Who won the game last night?
+  - What's the latest football score?
+  - Tell me about the Olympics
+  - How is my favorite team doing?
+  - What are the basketball rankings?
+  - Who holds the world record?
+  - When is the next match?
+  metadata:
+    category: sports
+    handler: sports_handler
+  distance_threshold: 0.45
+- name: cooking
+  references:
+  - How do I make pasta?
+  - What's a good recipe for chicken?
+  - How to bake a cake?
+  - What ingredients do I need for pizza?
+  - How long should I cook steak?
+  - What's a healthy breakfast option?
+  - How to make vegetarian dishes?
+  metadata:
+    category: cooking
+    handler: cooking_handler
+  distance_threshold: 0.4
+- name: travel
+  references:
+  - What are good places to visit in Europe?
+  - How do I plan a vacation?
+  - What's the best time to visit Japan?
+  - Where should I stay in Paris?
+  - What documents do I need for travel?
+  - How to book cheap flights?
+  - What are popular tourist attractions?
+  metadata:
+    category: travel
+    handler: travel_handler
+  distance_threshold: 0.4
+- name: general
+  references:
+  - Hello
+  - How are you?
+  - What can you help me with?
+  - Tell me something interesting
+  - What's the weather like?
+  - I need help
+  - Thank you
+  metadata:
+    category: general
+    handler: general_handler
+  distance_threshold: 0.5
+vectorizer:
+  type: hf
+  model: sentence-transformers/all-mpnet-base-v2
+routing_config:
+  max_k: 3
+  aggregation_method: avg

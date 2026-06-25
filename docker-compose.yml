@@ -1,0 +1,71 @@
+services:
+  frontend:
+    build:
+      context: ./nextjs-app
+      dockerfile: Dockerfile.dev
+    container_name: bankingai-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:8000
+      - NODE_ENV=development
+    volumes:
+      - ./nextjs-app:/app
+      - /app/node_modules
+    command: ["npm","run","dev","--","-p","3000","-H","0.0.0.0"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD","curl","-f","http://localhost:3000"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: bankingai-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CORS_ORIGINS=http://localhost:3000
+      - REDIS_URL=redis://redis:6379
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL}
+      - GROQ_API_URL=${GROQ_API_URL}
+      - HF_TOKEN=${HF_TOKEN}
+      - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN}
+      - HISTORY_INDEX=${HISTORY_INDEX}
+      - HISTORY_NAMESPACE=${HISTORY_NAMESPACE}
+      - HISTORY_TOPK_RECENT=${HISTORY_TOPK_RECENT}
+      - HISTORY_TOPK_RELEVANT=${HISTORY_TOPK_RELEVANT}
+      - HISTORY_DISTANCE_THRESHOLD=${HISTORY_DISTANCE_THRESHOLD}
+    volumes:
+      - .:/app
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD","wget","-qO-","http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: bankingai-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+networks:
+  default:
+    name: bankingai-net
