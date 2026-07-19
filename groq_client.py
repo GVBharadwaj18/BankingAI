@@ -2,13 +2,10 @@ import os
 import requests
 from typing import Any, Dict, List, Optional
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "groq-1")
-GROQ_API_URL = os.getenv("GROQ_API_URL", "https://api.groq.com/v1/models")
-
 
 def get_groq_endpoint(model: Optional[str] = None) -> str:
-    base_url = GROQ_API_URL.rstrip("/")
+    api_url = os.getenv("GROQ_API_URL", "https://api.groq.com/v1/models")
+    base_url = api_url.rstrip("/")
     # Groq API is OpenAI-compatible, so always use v1/chat/completions
     if not base_url.endswith("/v1"):
         base_url = f"{base_url}/v1"
@@ -27,11 +24,13 @@ def chat_completion(
     top_p: float = 1.0,
     n: int = 1,
 ) -> Dict[str, Any]:
-    if not GROQ_API_KEY:
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured")
 
+    groq_model = os.getenv("GROQ_MODEL", "groq-1")
     payload = {
-        "model": model or GROQ_MODEL,
+        "model": model or groq_model,
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
@@ -40,7 +39,7 @@ def chat_completion(
     }
 
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 

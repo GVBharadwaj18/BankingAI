@@ -17,7 +17,8 @@ from tools import (
     suggest_fd_ladder_tool,
     search_policy_tool,
     get_forex_rates_tool,
-    handle_fraud_dispute_tool
+    handle_fraud_dispute_tool,
+    analyze_spending_tool
 )
 
 load_dotenv()
@@ -46,7 +47,8 @@ TOOL_MAP = {
     "savings_tool": suggest_fd_ladder_tool,
     "policy_rag_tool": search_policy_tool,
     "forex_tool": get_forex_rates_tool,
-    "fraud_tool": handle_fraud_dispute_tool
+    "fraud_tool": handle_fraud_dispute_tool,
+    "spending_tool": analyze_spending_tool
 }
 
 
@@ -70,42 +72,42 @@ def route_intent_node(state: ConversationState) -> ConversationState:
                 "required_slots": ["loan_type", "amount", "tenure"],
                 "handler": "loans_tool"
             }
-            print(f"💭 Reusing 'loan' intent from context (user answering slot question)")
+            print(f"[INFO] Reusing 'loan' intent from context (user answering slot question)")
         elif is_short_answer and ("credit" in context.lower() or "Intent: credit_card" in context):
             reuse_intent = "credit_card"
             reuse_metadata = {
                 "required_slots": ["income", "card_type"],
                 "handler": "cards_tool"
             }
-            print(f"💭 Reusing 'credit_card' intent from context")
+            print(f"[INFO] Reusing 'credit_card' intent from context")
         elif is_short_answer and ("savings" in context.lower() or "fd" in context.lower() or "Intent: savings_fd" in context):
             reuse_intent = "savings_fd"
             reuse_metadata = {
                 "required_slots": ["amount", "tenure"],
                 "handler": "savings_tool"
             }
-            print(f"💭 Reusing 'savings_fd' intent from context")
+            print(f"[INFO] Reusing 'savings_fd' intent from context")
         elif is_short_answer and ("forex" in context.lower() or "currency" in context.lower() or "Intent: forex_travel" in context):
             reuse_intent = "forex_travel"
             reuse_metadata = {
                 "required_slots": ["currency", "amount"],
                 "handler": "forex_tool"
             }
-            print(f"💭 Reusing 'forex_travel' intent from context")
+            print(f"[INFO] Reusing 'forex_travel' intent from context")
         elif is_short_answer and ("policy" in context.lower() or "faq" in context.lower() or "Intent: policy_faq" in context):
             reuse_intent = "policy_faq"
             reuse_metadata = {
                 "required_slots": [],
                 "handler": "policy_rag_tool"
             }
-            print(f"💭 Reusing 'policy_faq' intent from context")
+            print(f"[INFO] Reusing 'policy_faq' intent from context")
         elif is_short_answer and ("fraud" in context.lower() or "dispute" in context.lower() or "Intent: fraud_dispute" in context):
             reuse_intent = "fraud_dispute"
             reuse_metadata = {
                 "required_slots": ["transaction_id", "description"],
                 "handler": "fraud_tool"
             }
-            print(f"💭 Reusing 'fraud_dispute' intent from context")
+            print(f"[INFO] Reusing 'fraud_dispute' intent from context")
     
     # If reusing intent from context, skip routing
     if reuse_intent:
@@ -204,7 +206,15 @@ CURRENT USER MESSAGE:
             max_tokens=250
         )
 
-        extracted_text = extract_groq_text(response)
+        extracted_text = extract_groq_text(response).strip()
+        
+        # Clean markdown code block wraps if present
+        if "```json" in extracted_text:
+            extracted_text = extracted_text.split("```json")[1].split("```")[0]
+        elif "```" in extracted_text:
+            extracted_text = extracted_text.split("```")[1].split("```")[0]
+            
+        extracted_text = extracted_text.strip()
         extracted = json.loads(extracted_text)
         
         # Update slots directly
@@ -218,7 +228,7 @@ CURRENT USER MESSAGE:
         print(f"Pending slots: {state['pending_slots']}")
         
     except Exception as e:
-        print(f"Slot extraction failed: {e}")
+        print(f"Slot extraction failed: {e}. Output was: {extracted_text if 'extracted_text' in locals() else 'None'}")
         fallback_slots = extract_slots_from_text(user_message, state["pending_slots"])
         if fallback_slots:
             for slot, value in fallback_slots.items():
@@ -261,7 +271,15 @@ def decide_next_node(state: ConversationState) -> ConversationState:
             "description": "Please describe the issue in detail."
         }
         
-        state["reply"] = slot_questions.get(next_slot, f"Could you provide: {next_slot}?")
+        if next_slot == "amount":
+            if state["intent"] == "loan":
+                state["reply"] = "What loan amount are you looking for?"
+            elif state["intent"] == "forex_travel":
+                state["reply"] = "How much foreign currency or INR amount do you need?"
+            else:
+                state["reply"] = "What amount are you planning to invest/need?"
+        else:
+            state["reply"] = slot_questions.get(next_slot, f"Could you provide: {next_slot}?")
     else:
         # All slots filled, ready to call tool
         pass
@@ -283,27 +301,55 @@ def call_tool_node(state: ConversationState) -> ConversationState:
         # Map slots to tool parameters
         tool_params = {}
         
-        # Tool-specific parameter mapping
+        # Tool-specific parameter mapping with safe type casting
         if handler_name == "loans_tool":
+            try:
+                loan_amount = float(state["slots"].get("amount", 500000))
+            except (ValueError, TypeError):
+                loan_amount = 500000.0
+            try:
+                interest_rate = float(state["slots"].get("interest_rate", 10.5))
+            except (ValueError, TypeError):
+                interest_rate = 10.5
+            try:
+                tenure_months = int(state["slots"].get("tenure", 60))
+            except (ValueError, TypeError):
+                tenure_months = 60
             tool_params = {
-                "loan_amount": state["slots"].get("amount", 500000),
-                "interest_rate": state["slots"].get("interest_rate", 10.5),
-                "tenure_months": state["slots"].get("tenure", 60)
+                "loan_amount": loan_amount,
+                "interest_rate": interest_rate,
+                "tenure_months": tenure_months
             }
         elif handler_name == "cards_tool":
+            try:
+                income = float(state["slots"].get("income", 500000))
+            except (ValueError, TypeError):
+                income = 500000.0
             tool_params = {
-                "income": state["slots"].get("income", 500000),
+                "income": income,
                 "preferred_benefits": state["slots"].get("card_type", "general")
             }
         elif handler_name == "savings_tool":
+            try:
+                total_amount = float(state["slots"].get("amount", 100000))
+            except (ValueError, TypeError):
+                total_amount = 100000.0
+            try:
+                tenure_months = int(state["slots"].get("tenure", 12))
+            except (ValueError, TypeError):
+                tenure_months = 12
             tool_params = {
-                "total_amount": state["slots"].get("amount", 100000),
-                "tenure_months": state["slots"].get("tenure", 12)
+                "total_amount": total_amount,
+                "tenure_months": tenure_months
             }
         elif handler_name == "forex_tool":
+            try:
+                amount = float(state["slots"].get("amount", 50000))
+            except (ValueError, TypeError):
+                amount = 50000.0
             tool_params = {
-                "currency": state["slots"].get("currency", "USD"),
-                "amount": state["slots"].get("amount", 50000)
+                "currency": str(state["slots"].get("currency", "USD")),
+                "amount": amount
             }
         elif handler_name == "fraud_tool":
             tool_params = {
@@ -314,8 +360,12 @@ def call_tool_node(state: ConversationState) -> ConversationState:
             tool_params = {
                 "query": state["text"]
             }
+        elif handler_name == "spending_tool":
+            tool_params = {
+                "month": "July 2026"
+            }
         
-        print(f"🔧 Calling {handler_name} with params: {tool_params}")
+        print(f"[INFO] Calling {handler_name} with params: {tool_params}")
         result = tool.invoke(tool_params)
         
         state["tool_result"] = result

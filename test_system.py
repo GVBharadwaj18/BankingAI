@@ -20,7 +20,7 @@ def test_health():
     print(f"Status: {response.status_code}")
     print(f"Response: {response.json()}")
     assert response.status_code == 200
-    print("✅ Health check passed")
+    print("[PASS] Health check passed")
 
 def test_chat_endpoint(query, description):
     """Test chat endpoint with a query"""
@@ -54,12 +54,12 @@ def test_chat_endpoint(query, description):
             if bullets:
                 print(f"\nDetails (first 3):")
                 for bullet in bullets[:3]:
-                    print(f"  • {bullet}")
+                    print(f"  * {bullet}")
         
-        print("✅ Test passed")
+        print("[PASS] Test passed")
         return data
     else:
-        print(f"❌ Test failed: {response.text}")
+        print(f"[FAIL] Test failed: {response.text}")
         return None
 
 def main():
@@ -109,15 +109,21 @@ def main():
             "Policy Query"
         )
         
+        # Test 8: Spending Analysis query
+        test_chat_endpoint(
+            "Analyze my monthly spending",
+            "Spending Analysis Query"
+        )
+        
         print("\n" + "="*60)
-        print("All Tests Completed! ✅")
+        print("All Tests Completed! [PASS]")
         print("="*60)
         
     except requests.exceptions.ConnectionError:
-        print("\n❌ Error: Cannot connect to API")
+        print("\n[ERROR] Cannot connect to API")
         print("Make sure the backend is running: uvicorn main:app --reload --port 8000")
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[ERROR] {e}")
         import traceback
         traceback.print_exc()
 

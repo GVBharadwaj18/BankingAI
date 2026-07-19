@@ -35,9 +35,20 @@ except ImportError:
 app = FastAPI(title="BankingAI API", description="Intelligent banking chatbot with semantic routing and conversation memory")
 
 # Add CORS middleware
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
+env_origins = os.getenv("CORS_ORIGINS")
+if env_origins:
+    for origin in env_origins.split(","):
+        stripped = origin.strip()
+        if stripped and stripped not in cors_origins:
+            cors_origins.append(stripped)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -205,4 +216,4 @@ async def chat_feedback(request: FeedbackRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

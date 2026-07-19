@@ -12,6 +12,19 @@ INDEX_NAME = os.getenv("HISTORY_INDEX", "bank:msg:history")
 # Cache of MessageHistory instances per session
 _history_cache = {}
 
+REDIS_AVAILABLE = True
+_in_memory_history = {}
+
+# Test Redis connection gracefully on startup
+try:
+    import redis
+    test_client = redis.Redis.from_url(REDIS_URL, socket_connect_timeout=2.0)
+    test_client.ping()
+    print("[INFO] Redis server is online and reachable")
+except Exception as e:
+    print(f"[WARNING] Redis is offline or unreachable: {e}. Switching to in-memory fallback memory.")
+    REDIS_AVAILABLE = False
+
 def get_history(session_id: str) -> MessageHistory:
     """
     Get or create a MessageHistory instance for a session
@@ -41,19 +54,38 @@ def add_message(session_id: str, role: str, text: str, intent: str = "unknown", 
         intent: Detected intent (for assistant messages)
         score: Router confidence score
     """
-    history = get_history(session_id)
-    
-    # Create message dict with metadata
-    message = {
+    global REDIS_AVAILABLE
+    if REDIS_AVAILABLE:
+        try:
+            history = get_history(session_id)
+            
+            # Create message dict with metadata
+            message = {
+                "role": role,
+                "content": text,
+                "metadata": {
+                    "intent": intent,
+                    "score": score
+                }
+            }
+            
+            history.add_message(message, session_tag=session_id)
+            return
+        except Exception as e:
+            print(f"[WARNING] Redis add_message failed: {e}. Falling back to in-memory history.")
+            REDIS_AVAILABLE = False
+
+    # In-memory fallback
+    if session_id not in _in_memory_history:
+        _in_memory_history[session_id] = []
+    _in_memory_history[session_id].append({
         "role": role,
         "content": text,
         "metadata": {
             "intent": intent,
             "score": score
         }
-    }
-    
-    history.add_message(message, session_tag=session_id)
+    })
 
 def store_exchange(session_id: str, prompt: str, response: str, intent: str = "unknown", score: float = 0.0):
     """
@@ -66,8 +98,19 @@ def store_exchange(session_id: str, prompt: str, response: str, intent: str = "u
         intent: Detected intent
         score: Router confidence score
     """
-    history = get_history(session_id)
-    history.store(prompt, response, session_tag=session_id)
+    global REDIS_AVAILABLE
+    if REDIS_AVAILABLE:
+        try:
+            history = get_history(session_id)
+            history.store(prompt, response, session_tag=session_id)
+            return
+        except Exception as e:
+            print(f"[WARNING] Redis store_exchange failed: {e}. Falling back to in-memory history.")
+            REDIS_AVAILABLE = False
+            
+    # In-memory fallback
+    add_message(session_id, "user", prompt)
+    add_message(session_id, "assistant", response, intent, score)
 
 def get_context(session_id: str, limit: int = 6) -> Optional[str]:
     """
@@ -80,47 +123,52 @@ def get_context(session_id: str, limit: int = 6) -> Optional[str]:
     Returns:
         Formatted conversation context string or None
     """
-    try:
-        history = get_history(session_id)
+    global REDIS_AVAILABLE
+    recent_messages = None
+    
+    if REDIS_AVAILABLE:
+        try:
+            history = get_history(session_id)
+            
+            # Get recent messages as list of dicts
+            print(f"[INFO] Attempting to get context from Redis for session {session_id}")
+            recent_messages = history.get_recent(top_k=limit, as_text=False, raw=False, session_tag=session_id)
+            print(f"[INFO] Retrieved {len(recent_messages) if recent_messages else 0} messages from Redis")
+        except Exception as e:
+            print(f"[WARNING] Redis get_context failed: {e}. Switching to in-memory history.")
+            REDIS_AVAILABLE = False
+            
+    if not REDIS_AVAILABLE:
+        print(f"[INFO] Attempting to get context from in-memory history for session {session_id}")
+        recent_messages = _in_memory_history.get(session_id, [])[-limit:]
+        print(f"[INFO] Retrieved {len(recent_messages) if recent_messages else 0} messages from in-memory history")
         
-        # Get recent messages as list of dicts
-        print(f"🔍 Attempting to get context for session {session_id}")
-        recent_messages = history.get_recent(top_k=limit, as_text=False, raw=False, session_tag=session_id)
-        
-        print(f"📥 Retrieved {len(recent_messages) if recent_messages else 0} messages")
-        
-        if not recent_messages:
-            print(f"ℹ️  No messages found for session {session_id}")
-            return None
-        
-        # Format messages as text
-        formatted = []
-        for msg in recent_messages:
-            print(f"📝 Processing message: {type(msg)} - {msg}")
-            if isinstance(msg, dict):
-                role = msg.get("role", "unknown").capitalize()
-                content = msg.get("content", "")
-                metadata = msg.get("metadata", {})
-                intent = metadata.get("intent", "unknown")
-                score = metadata.get("score", 0.0)
-                
-                if role == "User":
-                    formatted.append(f"User: {content}")
-                else:
-                    formatted.append(f"Assistant: {content[:100]}... Intent: {intent} ({score:.2f})")
-            elif isinstance(msg, str):
-                formatted.append(msg)
-        
-        result = "\n".join(formatted) if formatted else None
-        if result:
-            print(f"✅ Context retrieved successfully:\n{result}")
-        return result
-        
-    except Exception as e:
-        import traceback
-        print(f"❌ Failed to get context: {e}")
-        traceback.print_exc()
+    if not recent_messages:
+        print(f"[INFO] No messages found for session {session_id}")
         return None
+    
+    # Format messages as text
+    formatted = []
+    for msg in recent_messages:
+        # print(f"[INFO] Processing message: {type(msg)}")
+        if isinstance(msg, dict):
+            role = msg.get("role", "unknown").capitalize()
+            content = msg.get("content", "")
+            metadata = msg.get("metadata", {}) or {}
+            intent = metadata.get("intent", "unknown")
+            score = metadata.get("score", 0.0)
+            
+            if role == "User":
+                formatted.append(f"User: {content}")
+            else:
+                formatted.append(f"Assistant: {content[:100]}... Intent: {intent} ({score:.2f})")
+        elif isinstance(msg, str):
+            formatted.append(msg)
+    
+    result = "\n".join(formatted) if formatted else None
+    if result:
+        print(f"[INFO] Context retrieved successfully ({len(formatted)} messages)")
+    return result
 
 def clear_conversation(session_id: str):
     """
@@ -129,16 +177,28 @@ def clear_conversation(session_id: str):
     Args:
         session_id: Session identifier
     """
-    try:
-        history = get_history(session_id)
-        history.clear()
+    global REDIS_AVAILABLE
+    if REDIS_AVAILABLE:
+        try:
+            history = get_history(session_id)
+            history.clear()
+            
+            # Remove from cache
+            if session_id in _history_cache:
+                del _history_cache[session_id]
+            
+            print(f"[INFO] Cleared Redis conversation history for session {session_id}")
+            return True
+        except Exception as e:
+            print(f"[WARNING] Failed to clear Redis conversation: {e}. Switching to in-memory history.")
+            REDIS_AVAILABLE = False
+            
+    if session_id in _in_memory_history:
+        _in_memory_history[session_id] = []
+    
+    if session_id in _history_cache:
+        del _history_cache[session_id]
         
-        # Remove from cache
-        if session_id in _history_cache:
-            del _history_cache[session_id]
-        
-        print(f"🗑️  Cleared conversation history for session {session_id}")
-        return True
-    except Exception as e:
-        print(f"⚠️  Failed to clear conversation: {e}")
-        return False
+    print(f"[INFO] Cleared in-memory conversation history for session {session_id}")
+    return True
+

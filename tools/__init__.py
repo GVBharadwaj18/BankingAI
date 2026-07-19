@@ -8,6 +8,7 @@ from .savings import suggest_fd_ladder_tool
 from .policy_rag import search_policy_tool
 from .forex import get_forex_rates_tool
 from .fraud import handle_fraud_dispute_tool
+from .spending import analyze_spending_tool
 
 __all__ = [
     "calculate_emi_tool",
@@ -15,6 +16,8 @@ __all__ = [
     "suggest_fd_ladder_tool",
     "search_policy_tool",
     "get_forex_rates_tool",
-    "handle_fraud_dispute_tool"
+    "handle_fraud_dispute_tool",
+    "analyze_spending_tool"
 ]
+
 
