@@ -1,7 +1,8 @@
 'use client';
-
-import { useState } from 'react';
+ 
+import { useState, useEffect } from 'react';
 import ChatDock from '@/components/ChatDock';
+import AuthModal from '@/components/AuthModal';
 
 const CARDS_DATA = [
   {
@@ -63,6 +64,67 @@ export default function Home() {
   const [expandedTxnId, setExpandedTxnId] = useState<string | null>(null);
   const [isOutflowDrawerOpen, setIsOutflowDrawerOpen] = useState(false);
 
+  // Authentication State
+  const [user, setUser] = useState<{ id: string; username: string; email: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showSignOut, setShowSignOut] = useState(false);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('auth_token');
+    const savedUser = localStorage.getItem('auth_user');
+    
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+      
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+      fetch(`${API_BASE}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${savedToken}`
+        }
+      })
+      .then(res => {
+        if (!res.ok) {
+          handleSignOut();
+        } else {
+          return res.json();
+        }
+      })
+      .then(userData => {
+        if (userData) {
+          setUser(userData);
+          localStorage.setItem('auth_user', JSON.stringify(userData));
+        }
+      })
+      .catch(err => console.error("Auth validation failed", err));
+    }
+  }, []);
+
+  const handleAuthSuccess = (userData: any, userToken: string) => {
+    setToken(userToken);
+    setUser(userData);
+    localStorage.setItem('auth_token', userToken);
+    localStorage.setItem('auth_user', JSON.stringify(userData));
+  };
+
+  const handleSignOut = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    setShowSignOut(false);
+  };
+
+  const savingsBalance = user?.accounts?.savings_balance ?? 828456.50;
+  const wealthBalance = user?.accounts?.wealth_balance ?? 200000.00;
+  const totalAssets = savingsBalance + wealthBalance;
+
+  const mutualFunds = user?.investments?.mutual_funds ?? 250000.00;
+  const fixedDeposits = user?.investments?.fixed_deposits ?? 100000.00;
+  const goldBonds = user?.investments?.gold_bonds ?? 62500.00;
+  const totalPortfolioValue = mutualFunds + fixedDeposits + goldBonds;
+
   const toggleFreezeCard = (idx: number) => {
     setFrozenCards(prev => {
       const copy = [...prev];
@@ -79,7 +141,11 @@ export default function Home() {
     });
   };
 
+  const [isAILoading, setIsAILoading] = useState(false);
+
   const triggerAIConsult = (query: string) => {
+    setIsAILoading(true);
+    setTimeout(() => setIsAILoading(false), 1500);
     window.dispatchEvent(new CustomEvent('trigger_ai_chat', { detail: { text: query } }));
   };
 
@@ -114,13 +180,40 @@ export default function Home() {
                 <span>AI Assistant: Active</span>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
-                  <div className="text-sm font-semibold text-white">V. Bharadwaj</div>
-                  <div className="text-xs text-white/50">Priority Elite</div>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center shadow-neon hover:scale-105 transition-transform duration-300 cursor-pointer">
-                  <span className="text-white font-bold text-lg">VB</span>
-                </div>
+                {user ? (
+                  <div className="flex items-center space-x-3 relative">
+                    <div className="text-right hidden sm:block">
+                      <div className="text-sm font-semibold text-white">{user.username}</div>
+                      <div className="text-xs text-white/50">Priority Elite</div>
+                    </div>
+                    <div 
+                      onClick={() => setShowSignOut(!showSignOut)}
+                      className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center shadow-neon hover:scale-105 transition-transform duration-300 cursor-pointer text-white font-bold text-lg"
+                    >
+                      {user.username.substring(0, 2).toUpperCase()}
+                    </div>
+                    
+                    {showSignOut && (
+                      <div className="absolute right-0 top-12 w-32 bg-[#0c1224]/95 border border-white/10 rounded-xl shadow-glass-lg p-2 z-50">
+                        <button
+                          onClick={handleSignOut}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 hover:text-red-400 rounded-lg transition-colors font-semibold"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-xs font-semibold transition-all text-white hover:text-accent-neon"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -239,7 +332,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/50">Total Assets</p>
-                <p className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-display">₹10,28,456.50</p>
+                <p className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-display">₹{totalAssets.toLocaleString('en-IN')}</p>
               </div>
               <div className="w-14 h-14 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300">
                 <svg className="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -452,6 +545,131 @@ export default function Home() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Accounts Section */}
+        <div id="accounts" className="relative backdrop-blur-lg bg-slate-900/40 rounded-2xl shadow-glass p-8 border border-white/10 mb-12 scroll-mt-24">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-display font-bold text-white tracking-wide">Elite Accounts</h2>
+            <button 
+              onClick={() => triggerAIConsult("Show my account summary")} 
+              disabled={isAILoading}
+              className="text-xs text-accent-neon font-bold hover:underline flex items-center gap-1.5 disabled:opacity-60"
+            >
+              {isAILoading ? (
+                <><span className="w-3 h-3 border border-accent-neon border-t-transparent rounded-full animate-spin inline-block"></span> Consulting AI...</>
+              ) : 'Get AI Report'}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Account 1 */}
+            <div className="p-6 rounded-xl bg-slate-950/30 border border-white/5 hover:border-purple-500/30 transition-all duration-300 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold px-2 py-0.5 rounded">Primary Savings</span>
+                  <h3 className="text-base font-bold text-white mt-2">Elite Savings Account</h3>
+                  <p className="text-xs text-white/40">Account No: •••• •••• 4501</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-extrabold text-white">₹{savingsBalance.toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] text-green-400">Interest: 4.5% p.a.</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => triggerAIConsult("Compare fixed deposit rates")} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] font-semibold text-white transition-all">
+                  Optimize Yield
+                </button>
+                <button onClick={() => triggerAIConsult("Calculate EMI for a personal loan")} className="px-3 py-1.5 bg-gradient-accent text-white rounded text-[10px] font-bold hover:shadow-neon transition-all">
+                  Borrow Against Balance
+                </button>
+              </div>
+            </div>
+
+            {/* Account 2 */}
+            <div className="p-6 rounded-xl bg-slate-950/30 border border-white/5 hover:border-indigo-500/30 transition-all duration-300 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold px-2 py-0.5 rounded">Wealth Management</span>
+                  <h3 className="text-base font-bold text-white mt-2">High-Yield Wealth Account</h3>
+                  <p className="text-xs text-white/40">Account No: •••• •••• 9102</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-extrabold text-white">₹{wealthBalance.toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] text-green-400">Interest: 6.2% p.a.</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => triggerAIConsult("Recommend card benefits")} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] font-semibold text-white transition-all">
+                  Upgrade Tier
+                </button>
+                <button onClick={() => triggerAIConsult("Compare investment options")} className="px-3 py-1.5 bg-gradient-accent text-white rounded text-[10px] font-bold hover:shadow-neon transition-all">
+                  Auto-Invest
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Investments Section */}
+        <div id="investments" className="relative backdrop-blur-lg bg-slate-900/40 rounded-2xl shadow-glass p-8 border border-white/10 mb-12 scroll-mt-24">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-xl font-display font-bold text-white tracking-wide">Investment Portfolio</h2>
+              <p className="text-xs text-white/40 mt-0.5">Asset Valuation & Returns</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xl font-extrabold text-white">₹{totalPortfolioValue.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-green-400 font-bold">📈 Total Return: +18.4%</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Asset 1 */}
+            <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5 hover:border-pink-500/20 transition-all duration-300 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Mutual Funds</span>
+                <span className="text-[9px] text-pink-400 bg-pink-500/10 px-1.5 py-0.5 rounded font-bold">+14.2%</span>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white/80">Apex Balanced Fund</h4>
+                <p className="text-sm font-extrabold text-white mt-1">₹{mutualFunds.toLocaleString('en-IN')}</p>
+              </div>
+              <button onClick={() => triggerAIConsult("Recommend mutual funds to invest")} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[9px] font-bold transition-all text-white">
+                Rebalance Portfolio
+              </button>
+            </div>
+
+            {/* Asset 2 */}
+            <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5 hover:border-purple-500/20 transition-all duration-300 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Fixed Deposits</span>
+                <span className="text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded font-bold">7.1% p.a.</span>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white/80">12-Month Cumulative</h4>
+                <p className="text-sm font-extrabold text-white mt-1">₹{fixedDeposits.toLocaleString('en-IN')}</p>
+              </div>
+              <button onClick={() => triggerAIConsult("Compare fixed deposit ladder strategy")} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[9px] font-bold transition-all text-white">
+                FD Ladder Planner
+              </button>
+            </div>
+
+            {/* Asset 3 */}
+            <div className="p-4 rounded-xl bg-slate-950/20 border border-white/5 hover:border-amber-500/20 transition-all duration-300 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Digital Gold</span>
+                <span className="text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-bold">+22.1%</span>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white/80">Sovereign Gold Bonds</h4>
+                <p className="text-sm font-extrabold text-white mt-1">₹{goldBonds.toLocaleString('en-IN')}</p>
+              </div>
+              <button onClick={() => triggerAIConsult("Compare gold vs equity options")} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[9px] font-bold transition-all text-white">
+                Buy More Assets
+              </button>
             </div>
           </div>
         </div>
@@ -724,6 +942,13 @@ export default function Home() {
 
         {/* Floating ChatDock Component */}
         <ChatDock />
+
+        {/* Authentication Modal */}
+        <AuthModal 
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={handleAuthSuccess}
+        />
       </main>
     </div>
   );

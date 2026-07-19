@@ -1,10 +1,44 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 from groq_client import chat_completion, extract_groq_text
+import motor.motor_asyncio
+import bcrypt
+import jwt
+from datetime import datetime, timedelta
+from bson import ObjectId
+
+# Password Utilities
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+# JWT Utilities
+JWT_SECRET = os.getenv("JWT_SECRET", "bankingai-super-secret-key-12345")
+JWT_ALGORITHM = "HS256"
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=7)
+    to_encode.update({"exp": int(expire.timestamp())})
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def decode_access_token(token: str) -> Optional[dict]:
+    try:
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return decoded_token if decoded_token["exp"] >= datetime.utcnow().timestamp() else None
+    except jwt.PyJWTError:
+        return None
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +68,53 @@ except ImportError:
 # Initialize FastAPI app
 app = FastAPI(title="BankingAI API", description="Intelligent banking chatbot with semantic routing and conversation memory")
 
+# Database connection globals
+db_client = None
+db = None
+
+@app.on_event("startup")
+async def startup_db_client():
+    global db_client, db
+    mongodb_url = os.getenv("MONGODB_URL", "mongodb://mongodb:27017")
+    db_name = os.getenv("MONGODB_DB", "banking_ai")
+    print(f"Connecting to MongoDB at {mongodb_url}...")
+    try:
+        db_client = motor.motor_asyncio.AsyncIOMotorClient(mongodb_url)
+        db = db_client[db_name]
+        # Create indexes
+        await db.users.create_index("username", unique=True)
+        await db.users.create_index("email", unique=True)
+        print("Connected to MongoDB successfully and created indexes.")
+    except Exception as e:
+        print(f"Failed to connect to MongoDB: {e}")
+
+    # Pre-warm the embedding model so first chat request is instant
+    try:
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _warmup_embeddings():
+            try:
+                from memory.history import get_context
+                # Trigger a dummy lookup which initializes the embedding model
+                get_context("__warmup__", limit=1)
+                print("[INFO] Embedding model pre-warmed successfully.")
+            except Exception as we:
+                print(f"[WARN] Embedding model warmup skipped: {we}")
+
+        loop = asyncio.get_event_loop()
+        executor = ThreadPoolExecutor(max_workers=1)
+        loop.run_in_executor(executor, _warmup_embeddings)
+    except Exception as e:
+        print(f"[WARN] Could not schedule embedding warmup: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    global db_client
+    if db_client:
+        db_client.close()
+        print("Closed MongoDB connection.")
+
 # Add CORS middleware
 cors_origins = [
     "http://localhost:3000",
@@ -62,6 +143,16 @@ except ImportError as e:
     orchestrator_available = False
     print(f"Orchestrator not available: {e}")
 
+# Auth Models
+class UserSignup(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    emailOrUsername: str
+    password: str
+
 # Pydantic models
 class ChatRequest(BaseModel):
     userId: Optional[str] = None
@@ -85,8 +176,148 @@ async def root():
 async def health():
     return {"status": "healthy", "message": "BankingAI API is running"}
 
+@app.post("/auth/signup")
+async def signup(user_in: UserSignup):
+    if not user_in.username.strip() or not user_in.email.strip() or not user_in.password.strip():
+        raise HTTPException(status_code=400, detail="All fields are required")
+        
+    username = user_in.username.strip()
+    email = user_in.email.strip().lower()
+    
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+        
+    # Check if user already exists
+    existing_user = await db.users.find_one({
+        "$or": [
+            {"username": username},
+            {"email": email}
+        ]
+    })
+    if existing_user:
+        if existing_user.get("email") == email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        else:
+            raise HTTPException(status_code=400, detail="Username already taken")
+            
+    # Create user with initial mock account data
+    hashed_password = hash_password(user_in.password)
+    new_user = {
+        "username": username,
+        "email": email,
+        "password": hashed_password,
+        "accounts": {
+            "savings_balance": 828456.50,
+            "wealth_balance": 200000.00
+        },
+        "investments": {
+            "mutual_funds": 250000.00,
+            "fixed_deposits": 100000.00,
+            "gold_bonds": 62500.00
+        },
+        "created_at": datetime.utcnow()
+    }
+    
+    result = await db.users.insert_one(new_user)
+    user_id = str(result.inserted_id)
+    
+    # Generate token
+    token = create_access_token({"sub": user_id, "username": username, "email": email})
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "username": username,
+            "email": email,
+            "accounts": new_user["accounts"],
+            "investments": new_user["investments"]
+        }
+    }
+
+@app.post("/auth/login")
+async def login(user_in: UserLogin):
+    login_id = user_in.emailOrUsername.strip()
+    password = user_in.password
+    
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+        
+    # Find user by username or email
+    user = await db.users.find_one({
+        "$or": [
+            {"username": login_id},
+            {"email": login_id.lower()}
+        ]
+    })
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+        
+    if not verify_password(password, user["password"]):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+        
+    user_id = str(user["_id"])
+    token = create_access_token({"sub": user_id, "username": user["username"], "email": user["email"]})
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "username": user["username"],
+            "email": user["email"],
+            "accounts": user.get("accounts", {
+                "savings_balance": 828456.50,
+                "wealth_balance": 200000.00
+            }),
+            "investments": user.get("investments", {
+                "mutual_funds": 250000.00,
+                "fixed_deposits": 100000.00,
+                "gold_bonds": 62500.00
+            })
+        }
+    }
+
+@app.get("/auth/me")
+async def get_me(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Unauthorized or expired token")
+        
+    user_id = payload.get("sub")
+    
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+        
+    # Fetch from db to verify user still exists
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token details")
+        
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    return {
+        "id": str(user["_id"]),
+        "username": user["username"],
+        "email": user["email"],
+        "accounts": user.get("accounts", {
+            "savings_balance": 828456.50,
+            "wealth_balance": 200000.00
+        }),
+        "investments": user.get("investments", {
+            "mutual_funds": 250000.00,
+            "fixed_deposits": 100000.00,
+            "gold_bonds": 62500.00
+        })
+    }
+
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, authorization: Optional[str] = Header(None)):
     try:
         # Validate input
         if not request.text.strip():
@@ -96,8 +327,17 @@ async def chat(request: ChatRequest):
         if not os.getenv("GROQ_API_KEY"):
             raise HTTPException(status_code=500, detail="Groq API key not configured")
         
+        user_id = request.userId
+        # Parse user details from Authorization Header if present
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.split(" ")[1]
+            payload = decode_access_token(token)
+            if payload:
+                user_id = payload.get("sub")
+                print(f"Authenticated user request: {payload.get('username')} ({user_id})")
+
         query = request.text.strip()
-        session_id = request.sessionId or f"session_{request.userId or 'anon'}_{int(__import__('time').time())}"
+        session_id = request.sessionId or f"session_{user_id or 'anon'}_{int(__import__('time').time())}"
         
         # Use orchestrator if available, otherwise fallback to simple LLM
         if orchestrator_available:
@@ -110,7 +350,7 @@ async def chat(request: ChatRequest):
             
             # Call orchestrator with context
             result = handle_turn(
-                user_id=request.userId,
+                user_id=user_id,
                 session_id=session_id,
                 text=query,
                 context=context_text
@@ -129,7 +369,7 @@ async def chat(request: ChatRequest):
             
             return ChatResponse(
                 reply=result["reply"],
-                userId=request.userId,
+                userId=user_id,
                 sessionId=session_id,
                 pending=result.get("pending"),
                 router=result.get("router"),
@@ -159,7 +399,7 @@ async def chat(request: ChatRequest):
             
             return ChatResponse(
                 reply=reply,
-                userId=request.userId,
+                userId=user_id,
                 sessionId=session_id
             )
         
