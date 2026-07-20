@@ -959,7 +959,7 @@ export default function Home() {
         )}
 
         {/* Floating ChatDock Component */}
-        <ChatDock />
+        <ChatDock user={user} />
 
         {/* Authentication Modal */}
         <AuthModal 

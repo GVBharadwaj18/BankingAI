@@ -20,7 +20,11 @@ interface Message {
   feedbackGiven?: boolean;
 }
 
-export default function ChatDock() {
+interface ChatDockProps {
+  user?: any;
+}
+
+export default function ChatDock({ user = null }: ChatDockProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,8 +32,25 @@ export default function ChatDock() {
   const [sessionId, setSessionId] = useState<string>('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
   
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (user === null) {
+      setMessages([]);
+      if (typeof window !== 'undefined') {
+        const newSid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('chat_session_id', newSid);
+        setSessionId(newSid);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
