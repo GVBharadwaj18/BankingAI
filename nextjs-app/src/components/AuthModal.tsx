@@ -70,8 +70,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      setError(err.message || 'Connection failed. Is the server running?');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Connection failed. Is the server running?';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

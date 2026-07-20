@@ -4,6 +4,25 @@ import { useState, useEffect } from 'react';
 import ChatDock from '@/components/ChatDock';
 import AuthModal from '@/components/AuthModal';
 
+interface UserAccount {
+  savings_balance?: number;
+  wealth_balance?: number;
+}
+
+interface UserInvestments {
+  mutual_funds?: number;
+  fixed_deposits?: number;
+  gold_bonds?: number;
+}
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  accounts?: UserAccount;
+  investments?: UserInvestments;
+}
+
 const CARDS_DATA = [
   {
     name: "Apex Black Travel Elite",
@@ -65,8 +84,7 @@ export default function Home() {
   const [isOutflowDrawerOpen, setIsOutflowDrawerOpen] = useState(false);
 
   // Authentication State
-  const [user, setUser] = useState<{ id: string; username: string; email: string } | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showSignOut, setShowSignOut] = useState(false);
 
@@ -75,7 +93,6 @@ export default function Home() {
     const savedUser = localStorage.getItem('auth_user');
     
     if (savedToken && savedUser) {
-      setToken(savedToken);
       setUser(JSON.parse(savedUser));
       
       const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
@@ -101,15 +118,16 @@ export default function Home() {
     }
   }, []);
 
-  const handleAuthSuccess = (userData: any, userToken: string) => {
-    setToken(userToken);
+  const handleAuthSuccess = (
+    userData: User,
+    userToken: string
+  ) => {
     setUser(userData);
     localStorage.setItem('auth_token', userToken);
     localStorage.setItem('auth_user', JSON.stringify(userData));
   };
 
   const handleSignOut = () => {
-    setToken(null);
     setUser(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
