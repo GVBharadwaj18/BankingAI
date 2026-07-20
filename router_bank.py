@@ -4,9 +4,24 @@ Uses RedisVL to route user queries to appropriate banking intents
 """
 
 import os
+import sys
+import builtins
 from typing import Dict, List, Optional
 from redisvl.extensions.router import SemanticRouter, Route, RoutingConfig
 from dotenv import load_dotenv
+
+# Ensure console printing is safe from UnicodeEncodeError on Windows
+def safe_print(*args, **kwargs):
+    new_args = []
+    encoding = sys.stdout.encoding or 'ascii'
+    for arg in args:
+        if isinstance(arg, str):
+            new_args.append(arg.encode(encoding, errors='replace').decode(encoding))
+        else:
+            new_args.append(arg)
+    builtins.print(*new_args, **kwargs)
+
+print = safe_print
 
 load_dotenv()
 

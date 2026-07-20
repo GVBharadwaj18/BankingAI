@@ -3,8 +3,23 @@ Conversation memory using RedisVL MessageHistory
 https://redis.io/docs/latest/develop/ai/redisvl/api/message_history/
 """
 import os
+import sys
+import builtins
 from typing import Optional
 from redisvl.extensions.message_history import MessageHistory
+
+# Ensure console printing is safe from UnicodeEncodeError on Windows
+def safe_print(*args, **kwargs):
+    new_args = []
+    encoding = sys.stdout.encoding or 'ascii'
+    for arg in args:
+        if isinstance(arg, str):
+            new_args.append(arg.encode(encoding, errors='replace').decode(encoding))
+        else:
+            new_args.append(arg)
+    builtins.print(*new_args, **kwargs)
+
+print = safe_print
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 INDEX_NAME = os.getenv("HISTORY_INDEX", "bank:msg:history")

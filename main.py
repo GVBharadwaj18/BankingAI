@@ -1,4 +1,20 @@
 import os
+import sys
+import builtins
+
+# Ensure console printing is safe from UnicodeEncodeError on Windows
+def safe_print(*args, **kwargs):
+    new_args = []
+    encoding = sys.stdout.encoding or 'ascii'
+    for arg in args:
+        if isinstance(arg, str):
+            new_args.append(arg.encode(encoding, errors='replace').decode(encoding))
+        else:
+            new_args.append(arg)
+    builtins.print(*new_args, **kwargs)
+
+print = safe_print
+
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -75,7 +91,7 @@ db = None
 @app.on_event("startup")
 async def startup_db_client():
     global db_client, db
-    mongodb_url = os.getenv("MONGODB_URL", "mongodb://mongodb:27017")
+    mongodb_url = os.getenv("MONGODB_URL") or os.getenv("MONGO_URL") or "mongodb://localhost:27017"
     db_name = os.getenv("MONGODB_DB", "banking_ai")
     print(f"Connecting to MongoDB at {mongodb_url}...")
     try:

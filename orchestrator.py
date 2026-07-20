@@ -5,9 +5,24 @@ Handles intent routing, slot filling, and tool execution
 
 import json
 import os
+import sys
+import builtins
 from typing import Dict, Any, List, Optional, TypedDict
 from langgraph.graph import StateGraph, END
 from dotenv import load_dotenv
+
+# Ensure console printing is safe from UnicodeEncodeError on Windows
+def safe_print(*args, **kwargs):
+    new_args = []
+    encoding = sys.stdout.encoding or 'ascii'
+    for arg in args:
+        if isinstance(arg, str):
+            new_args.append(arg.encode(encoding, errors='replace').decode(encoding))
+        else:
+            new_args.append(arg)
+    builtins.print(*new_args, **kwargs)
+
+print = safe_print
 
 from groq_client import chat_completion, extract_groq_text
 from router_bank import get_router
