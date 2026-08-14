@@ -7,6 +7,9 @@ RUN npm ci
 
 COPY . .
 
+# Ensure public directory exists
+RUN mkdir -p public
+
 ARG NEXT_PUBLIC_API_BASE
 ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 
