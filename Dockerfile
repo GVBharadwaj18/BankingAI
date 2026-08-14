@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential curl wget && \
     rm -rf /var/lib/apt/lists/*
 
+# Install CPU-only PyTorch to save 2.5GB+ disk space
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 # Install Python packages
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
