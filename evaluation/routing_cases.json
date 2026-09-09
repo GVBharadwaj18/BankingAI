@@ -1,0 +1,882 @@
+[
+  {
+    "id": "TC-001",
+    "query": "I want to apply for a personal loan",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "personal"},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-002",
+    "query": "What's the interest rate on home loans?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "home"},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-003",
+    "query": "Calculate EMI for a car loan of 800000 for 5 years",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "car", "amount": 800000, "tenure": 60},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-004",
+    "query": "I need an education loan for my master's degree",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "education"},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-005",
+    "query": "How much personal loan can I get for 500000?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "personal", "amount": 500000},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-006",
+    "query": "What is the maximum tenure for a home loan?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "home"},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-007",
+    "query": "Check loan eligibility for 1000000 rupees",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"amount": 1000000},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-008",
+    "query": "I need a loan of 300000 for 24 months",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"amount": 300000, "tenure": 24},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-009",
+    "query": "What is the monthly repayment on a 5 lakh loan?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"amount": 500000},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-010",
+    "query": "Can I pre-close my personal loan early?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "personal"},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-011",
+    "query": "Tell me about car loan EMI options for 60 months",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "car", "tenure": 60},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-012",
+    "query": "What are the interest rates for education loan abroad?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "education"},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-013",
+    "query": "I want to take a home loan of 5000000 for 20 years",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "home", "amount": 5000000, "tenure": 240},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-014",
+    "query": "How is loan EMI calculated?",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-015",
+    "query": "I need an urgent personal loan of 200000",
+    "expected_intent": "loan",
+    "expected_slots": ["loan_type", "amount", "tenure"],
+    "expected_slot_values": {"loan_type": "personal", "amount": 200000},
+    "expected_handler": "loans_tool"
+  },
+  {
+    "id": "TC-016",
+    "query": "I want to apply for a credit card",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-017",
+    "query": "What credit cards do you offer for travel rewards?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "travel"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-018",
+    "query": "I need a cashback credit card for online shopping",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "cashback"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-019",
+    "query": "Which premium credit card is best for high income?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "premium"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-020",
+    "query": "What is the annual fee for your travel rewards card?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "travel"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-021",
+    "query": "My annual income is 1200000, which card can I get?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"income": 1200000},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-022",
+    "query": "Recommend a credit card for lounge access and travel",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "travel"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-023",
+    "query": "What are the credit card eligibility criteria for salary 800000?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"income": 800000},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-024",
+    "query": "How do I upgrade my existing credit card to premium?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "premium"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-025",
+    "query": "Compare cashback card vs travel rewards card",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-026",
+    "query": "What credit limit will I get with 600000 annual income?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"income": 600000},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-027",
+    "query": "I want a new credit card with maximum rewards",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"card_type": "rewards"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-028",
+    "query": "Are there zero annual fee credit cards?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-029",
+    "query": "I earn 1500000 per year and want a cashback card",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {"income": 1500000, "card_type": "cashback"},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-030",
+    "query": "How to convert credit card reward points to cash?",
+    "expected_intent": "credit_card",
+    "expected_slots": ["income", "card_type"],
+    "expected_slot_values": {},
+    "expected_handler": "cards_tool"
+  },
+  {
+    "id": "TC-031",
+    "query": "What are today's fixed deposit interest rates?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-032",
+    "query": "I want to open a fixed deposit of 100000 for 12 months",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"amount": 100000, "tenure": 12},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-033",
+    "query": "How does an FD ladder work for 500000 rupees?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"amount": 500000},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-034",
+    "query": "Tell me about savings account interest rates and benefits",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-035",
+    "query": "What is the penalty for premature FD withdrawal?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-036",
+    "query": "Recurring deposit vs fixed deposit which is better?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-037",
+    "query": "I want to invest 200000 in FD for 36 months",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"amount": 200000, "tenure": 36},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-038",
+    "query": "Suggest an FD laddering strategy for 300000",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"amount": 300000},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-039",
+    "query": "What interest rate do senior citizens get on fixed deposits?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-040",
+    "query": "How can I open a high yield savings account?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-041",
+    "query": "Is tax deducted at source (TDS) applicable on FD interest?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-042",
+    "query": "I want to deposit 50000 every month in RD",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"amount": 50000},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-043",
+    "query": "What is the best 1 year investment option in bank?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"tenure": 12},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-044",
+    "query": "Calculate maturity value of 100000 FD for 2 years",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {"amount": 100000, "tenure": 24},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-045",
+    "query": "How to auto-renew my fixed deposit on maturity?",
+    "expected_intent": "savings_fd",
+    "expected_slots": ["amount", "tenure"],
+    "expected_slot_values": {},
+    "expected_handler": "savings_tool"
+  },
+  {
+    "id": "TC-046",
+    "query": "What are your branch timings on Saturday?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-047",
+    "query": "How do I reset my net banking password?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-048",
+    "query": "What documents are required for KYC verification?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-049",
+    "query": "How can I close my bank savings account?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-050",
+    "query": "What are the account minimum balance charges?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-051",
+    "query": "Tell me about your customer privacy policy",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-052",
+    "query": "Where is the nearest branch customer service center?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-053",
+    "query": "What is the daily ATM cash withdrawal limit?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-054",
+    "query": "How do I update my mobile number in bank records?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-055",
+    "query": "What documents do I need to open a joint account?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-056",
+    "query": "How to request a new checkbook online?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-057",
+    "query": "What are the wire transfer and NEFT RTGS charges?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-058",
+    "query": "How can I download my annual bank statement?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-059",
+    "query": "Is net banking available 24/7 on holidays?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-060",
+    "query": "How to register for SMS banking alerts?",
+    "expected_intent": "policy_faq",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "policy_rag_tool"
+  },
+  {
+    "id": "TC-061",
+    "query": "What is today's USD to INR exchange rate?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "USD"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-062",
+    "query": "I need EUR foreign exchange for my trip to Europe",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "EUR"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-063",
+    "query": "How to apply for a forex travel card?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-064",
+    "query": "Convert 1000 USD to INR rate today",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "USD", "amount": 1000},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-065",
+    "query": "What travel insurance options do you offer for international trips?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-066",
+    "query": "What is the exchange rate for GBP British Pound?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "GBP"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-067",
+    "query": "I need 2000 EUR for my travel abroad",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "EUR", "amount": 2000},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-068",
+    "query": "How to load money into my multi-currency forex card?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-069",
+    "query": "What are the markup charges on international debit card transactions?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-070",
+    "query": "I want to exchange JPY Japanese Yen currency for travel",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "JPY"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-071",
+    "query": "What is the current foreign exchange rate for AUD Australian Dollar?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "AUD"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-072",
+    "query": "Can I buy foreign currency cash before traveling?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-073",
+    "query": "How long does international wire transfer in USD take?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "USD"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-074",
+    "query": "Best forex card for students going to USA",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "USD"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-075",
+    "query": "What is the CAD to INR exchange conversion rate?",
+    "expected_intent": "forex_travel",
+    "expected_slots": ["currency", "amount"],
+    "expected_slot_values": {"currency": "CAD"},
+    "expected_handler": "forex_tool"
+  },
+  {
+    "id": "TC-076",
+    "query": "My card was used for a transaction I don't recognize",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"description": "transaction I don't recognize"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-077",
+    "query": "I lost my credit card please block it immediately",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"description": "lost credit card"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-078",
+    "query": "Report unauthorized transaction TXN998811 on my debit card",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"transaction_id": "TXN998811"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-079",
+    "query": "Someone cloned my card and withdrew money at ATM",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"description": "cloned card ATM withdrawal"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-080",
+    "query": "Dispute a double charged transaction ID TXN443322",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"transaction_id": "TXN443322"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-081",
+    "query": "I received an OTP for a payment I did not make",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-082",
+    "query": "Report fraudulent charge on my account",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-083",
+    "query": "My credit card was stolen in a restaurant",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"description": "stolen credit card"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-084",
+    "query": "Unrecognized charge of 4500 rupees on my statement",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-085",
+    "query": "Block my debit card immediately TXN123456",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {"transaction_id": "TXN123456"},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-086",
+    "query": "How to raise a chargeback for failed online purchase?",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-087",
+    "query": "Fraudulent transaction detected on my credit card",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-088",
+    "query": "Money was deducted from my account but ATM did not dispense cash",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-089",
+    "query": "I suspect phishing scam on my net banking account",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-090",
+    "query": "Emergency card block request for stolen phone and card",
+    "expected_intent": "fraud_dispute",
+    "expected_slots": ["transaction_id", "description"],
+    "expected_slot_values": {},
+    "expected_handler": "fraud_tool"
+  },
+  {
+    "id": "TC-091",
+    "query": "Analyze my monthly spending for last month",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-092",
+    "query": "Where did I spend most of my money this month?",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-093",
+    "query": "Show me my budget breakdown and monthly outflow",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-094",
+    "query": "Give me a spending report by category",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-095",
+    "query": "How much did I spend on dining out and groceries?",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-096",
+    "query": "Audit my monthly expenses and suggest budget tips",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-097",
+    "query": "Check my monthly shopping and utility spend breakdown",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-098",
+    "query": "What were my top expense categories this quarter?",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-099",
+    "query": "Summarize my credit card spending for this month",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-100",
+    "query": "Track my recurring monthly subscription expenses",
+    "expected_intent": "spending_analysis",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": "spending_tool"
+  },
+  {
+    "id": "TC-101",
+    "query": "What is the capital city of France?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-102",
+    "query": "How do I cook Italian pasta carbonara?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-103",
+    "query": "Who won the cricket world cup in 2023?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-104",
+    "query": "Can you write a Python script for sorting a list?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-105",
+    "query": "What is the weather forecast for London tomorrow?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-106",
+    "query": "Tell me a joke about software engineers",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-107",
+    "query": "asdfghjkl 123456 !!!",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-108",
+    "query": "Recommend me a good movie to watch tonight",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-109",
+    "query": "How to repair a flat bicycle tire at home?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  },
+  {
+    "id": "TC-110",
+    "query": "What is quantum computing and how does it work?",
+    "expected_intent": "unknown",
+    "expected_slots": [],
+    "expected_slot_values": {},
+    "expected_handler": null
+  }
+]

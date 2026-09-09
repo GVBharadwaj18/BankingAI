@@ -1,0 +1,129 @@
+{
+  "timestamp": "2026-09-09 20:12:02",
+  "total_slot_queries": 75,
+  "llm_slot_extractor": {
+    "precision_pct": 66.18,
+    "recall_pct": 97.83,
+    "f1_score": 78.95,
+    "avg_latency_ms": 1526.13
+  },
+  "heuristic_slot_extractor": {
+    "precision_pct": 84.06,
+    "recall_pct": 98.31,
+    "f1_score": 90.62
+  },
+  "per_slot_type_breakdown": {
+    "loan_type": {
+      "expected_count": 11,
+      "llm_accuracy_pct": 54.55,
+      "heuristic_accuracy_pct": 100.0
+    },
+    "amount": {
+      "expected_count": 15,
+      "llm_accuracy_pct": 86.67,
+      "heuristic_accuracy_pct": 100.0
+    },
+    "tenure": {
+      "expected_count": 8,
+      "llm_accuracy_pct": 62.5,
+      "heuristic_accuracy_pct": 100.0
+    },
+    "income": {
+      "expected_count": 4,
+      "llm_accuracy_pct": 100.0,
+      "heuristic_accuracy_pct": 100.0
+    },
+    "card_type": {
+      "expected_count": 8,
+      "llm_accuracy_pct": 62.5,
+      "heuristic_accuracy_pct": 100.0
+    },
+    "currency": {
+      "expected_count": 10,
+      "llm_accuracy_pct": 90.0,
+      "heuristic_accuracy_pct": 90.0
+    },
+    "transaction_id": {
+      "expected_count": 3,
+      "llm_accuracy_pct": 100.0,
+      "heuristic_accuracy_pct": 100.0
+    },
+    "description": {
+      "expected_count": 4,
+      "llm_accuracy_pct": 0.0,
+      "heuristic_accuracy_pct": 0.0
+    }
+  },
+  "mismatches": [
+    {
+      "id": "TC-003",
+      "query": "Calculate EMI for a car loan of 800000 for 5 years",
+      "slot": "loan_type",
+      "expected": "car",
+      "extracted": "car loan"
+    },
+    {
+      "id": "TC-003",
+      "query": "Calculate EMI for a car loan of 800000 for 5 years",
+      "slot": "tenure",
+      "expected": 60,
+      "extracted": "5 years"
+    },
+    {
+      "id": "TC-005",
+      "query": "How much personal loan can I get for 500000?",
+      "slot": "loan_type",
+      "expected": "personal",
+      "extracted": "personal loan"
+    },
+    {
+      "id": "TC-006",
+      "query": "What is the maximum tenure for a home loan?",
+      "slot": "loan_type",
+      "expected": "home",
+      "extracted": "home loan"
+    },
+    {
+      "id": "TC-007",
+      "query": "Check loan eligibility for 1000000 rupees",
+      "slot": "amount",
+      "expected": 1000000,
+      "extracted": "1000000 rupees"
+    },
+    {
+      "id": "TC-009",
+      "query": "What is the monthly repayment on a 5 lakh loan?",
+      "slot": "amount",
+      "expected": 500000,
+      "extracted": "5 lakh"
+    },
+    {
+      "id": "TC-011",
+      "query": "Tell me about car loan EMI options for 60 months",
+      "slot": "loan_type",
+      "expected": "car",
+      "extracted": "car loan"
+    },
+    {
+      "id": "TC-011",
+      "query": "Tell me about car loan EMI options for 60 months",
+      "slot": "tenure",
+      "expected": 60,
+      "extracted": "60 months"
+    },
+    {
+      "id": "TC-013",
+      "query": "I want to take a home loan of 5000000 for 20 years",
+      "slot": "loan_type",
+      "expected": "home",
+      "extracted": "home loan"
+    },
+    {
+      "id": "TC-013",
+      "query": "I want to take a home loan of 5000000 for 20 years",
+      "slot": "tenure",
+      "expected": 240,
+      "extracted": "20 years"
+    }
+  ]
+}

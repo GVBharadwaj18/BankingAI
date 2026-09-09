@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-09 20:12:02",
+  "total_test_cases": 110,
+  "intent_routing_accuracy_pct": 93.64,
+  "tool_selection_accuracy_pct": 93.64,
+  "ambiguous_query_f1_score": 100.0,
+  "slot_extraction_f1_llm": 78.95,
+  "slot_extraction_f1_heuristic": 90.62,
+  "avg_router_latency_ms": 128.13,
+  "resume_highlight": "Built a production evaluation harness with 110+ test cases, achieving 93.6% intent-routing accuracy across 7 core banking workflows, 93.6% tool selection accuracy, and 79.0% slot extraction F1-score with deterministic fallback handling."
+}

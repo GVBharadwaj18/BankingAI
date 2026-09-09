@@ -515,7 +515,7 @@ def extract_slots_from_context(context: str) -> Dict[str, Any]:
 
 
 def extract_slots_from_text(text: str, pending_slots: List[str]) -> Dict[str, Any]:
-    """Extract slot values from a single user message using simple heuristics."""
+    """Extract slot values from a single user message using pattern heuristics."""
     import re
 
     normalized = text.lower()
@@ -527,13 +527,21 @@ def extract_slots_from_text(text: str, pending_slots: List[str]) -> Dict[str, An
             slots["loan_type"] = loan_type_match.group(1)
 
     if "amount" in pending_slots:
-        amount_match = re.search(r'\b(?:rs\s*)?([0-9][0-9,]{2,})\b', normalized)
-        if amount_match:
-            amount_text = amount_match.group(1).replace(",", "")
+        # Check for lakh / crore expressions first
+        lakh_match = re.search(r'\b(\d+(?:\.\d+)?)\s*(lakh|lakhs|lac|lacs)\b', normalized)
+        if lakh_match:
             try:
-                slots["amount"] = int(amount_text)
+                slots["amount"] = int(float(lakh_match.group(1)) * 100000)
             except ValueError:
                 pass
+        else:
+            amount_match = re.search(r'\b(?:rs\.?\s*|inr\s*)?([0-9][0-9,]{2,})\b', normalized)
+            if amount_match:
+                amount_text = amount_match.group(1).replace(",", "")
+                try:
+                    slots["amount"] = int(amount_text)
+                except ValueError:
+                    pass
 
     if "tenure" in pending_slots:
         tenure_match = re.search(r'\b(\d+)\s*(months?|years?)\b', normalized)
@@ -545,12 +553,48 @@ def extract_slots_from_text(text: str, pending_slots: List[str]) -> Dict[str, An
             else:
                 slots["tenure"] = num
         else:
-            # Try to interpret a standalone small number as months
             standalone_num = re.search(r'\b(\d{1,2})\b', normalized)
             if standalone_num:
                 num = int(standalone_num.group(1))
                 if 1 <= num <= 60:
                     slots["tenure"] = num
+
+    if "income" in pending_slots:
+        # e.g., salary 800000, income is 1200000, earn 1500000
+        lakh_inc = re.search(r'\b(\d+(?:\.\d+)?)\s*(lakh|lakhs|lac|lacs)\b', normalized)
+        if lakh_inc:
+            try:
+                slots["income"] = int(float(lakh_inc.group(1)) * 100000)
+            except ValueError:
+                pass
+        else:
+            inc_match = re.search(r'\b(?:income|salary|earn|earning)(?:.*?([0-9][0-9,]{4,}))\b', normalized)
+            if not inc_match:
+                inc_match = re.search(r'\b([0-9][0-9,]{5,})\b', normalized)
+            if inc_match:
+                try:
+                    slots["income"] = int(inc_match.group(1).replace(",", ""))
+                except ValueError:
+                    pass
+
+    if "card_type" in pending_slots:
+        card_match = re.search(r'\b(travel|cashback|premium|rewards?)\b', normalized)
+        if card_match:
+            slots["card_type"] = card_match.group(1)
+
+    if "currency" in pending_slots:
+        curr_match = re.search(r'\b(usd|eur|gbp|jpy|aud|cad)\b', normalized)
+        if curr_match:
+            slots["currency"] = curr_match.group(1).upper()
+
+    if "transaction_id" in pending_slots:
+        txn_match = re.search(r'\b(txn\w+)\b', normalized)
+        if txn_match:
+            slots["transaction_id"] = txn_match.group(1).upper()
+
+    if "description" in pending_slots:
+        if any(w in normalized for w in ["stolen", "unauthorized", "cloned", "lost", "dispute", "recognize"]):
+            slots["description"] = text.strip()
 
     return slots
 

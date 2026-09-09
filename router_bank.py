@@ -7,7 +7,19 @@ import os
 import sys
 import builtins
 from typing import Dict, List, Optional
-from redisvl.extensions.router import SemanticRouter, Route, RoutingConfig
+try:
+    from redisvl.extensions.router import SemanticRouter, Route, RoutingConfig
+    HAS_REDISVL = True
+except ImportError:
+    HAS_REDISVL = False
+    class Route:
+        def __init__(self, name: str, references: List[str], metadata: Dict, distance_threshold: float = 0.4):
+            self.name = name
+            self.references = references
+            self.metadata = metadata
+            self.distance_threshold = distance_threshold
+    SemanticRouter = None
+    RoutingConfig = None
 from dotenv import load_dotenv
 
 # Ensure console printing is safe from UnicodeEncodeError on Windows
@@ -162,6 +174,11 @@ class BankingRouter:
         """
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         
+        if not HAS_REDISVL:
+            self.redis_available = False
+            self.router = None
+            return
+
         routing_config = RoutingConfig(
             max_k=3,  # Return top 3 matches
             aggregation_method="avg"
@@ -186,6 +203,117 @@ class BankingRouter:
             self.redis_available = False
             self.router = None
             
+    def _route_text_local_semantic(self, text: str) -> Dict:
+        """Fast local keyword & reference overlap semantic classifier for offline/no-Redis mode"""
+        import re
+        normalized = text.lower().strip()
+        tokens = set(re.findall(r'\b\w+\b', normalized))
+
+        # Check for explicitly out-of-scope non-banking phrases
+        out_of_scope_keywords = {
+            "pasta", "carbonara", "weather", "forecast", "london", "france", "capital",
+            "cricket", "world cup", "joke", "movie", "python", "script", "bicycle", "tire", "quantum"
+        }
+        if tokens.intersection(out_of_scope_keywords):
+            return {
+                "intent": "unknown",
+                "score": 0.0,
+                "confidence": "none",
+                "metadata": {},
+                "topK": [],
+                "threshold": None
+            }
+
+        # Intent rules & keyword signatures
+        intent_rules = [
+            (
+                "fraud_dispute",
+                r'\b(unauthorized|stolen|cloned|fraud|fraudulent|dispute|block|chargeback|phishing|scam|double charged|unrecognized|deducted|otp)\b',
+                ["stolen", "unauthorized", "block", "dispute"]
+            ),
+            (
+                "loan",
+                r'\b(loan|loans|emi|repayment|eligibility|pre-close|preclose)\b',
+                ["personal loan", "home loan", "car loan", "education loan", "emi"]
+            ),
+            (
+                "credit_card",
+                r'\b(credit card|cashback|travel card|rewards card|lounge access|credit limit|annual fee|card benefits)\b',
+                ["credit card", "cashback", "rewards"]
+            ),
+            (
+                "savings_fd",
+                r'\b(fd|fixed deposit|savings account|savings|recurring deposit|rd|fd ladder|laddering|maturity|tds)\b',
+                ["fixed deposit", "fd", "savings account", "rd"]
+            ),
+            (
+                "forex_travel",
+                r'\b(forex|foreign exchange|exchange rate|usd|eur|gbp|jpy|aud|cad|travel card|travel insurance|wire transfer|conversion rate)\b',
+                ["forex", "exchange rate", "foreign currency"]
+            ),
+            (
+                "spending_analysis",
+                r'\b(spending|spent|outflow|budget|expense|expenses|categories|category|budget audit|spending report|outflow breakdown)\b',
+                ["spending", "budget", "expenses", "outflow"]
+            ),
+            (
+                "policy_faq",
+                r'\b(branch|timings|password|kyc|close my account|close account|privacy policy|minimum balance|atm limit|mobile number|checkbook|neft|rtgs|statement|net banking)\b',
+                ["branch timing", "password reset", "kyc", "close account"]
+            )
+        ]
+
+        best_intent = "unknown"
+        best_score = 0.0
+
+        # 1. Regex rule & reference match
+        for intent_name, pattern, key_phrases in intent_rules:
+            if re.search(pattern, normalized):
+                # Calculate phrase matching score
+                matches = re.findall(pattern, normalized)
+                score = min(0.95, 0.70 + 0.10 * len(matches))
+                if score > best_score:
+                    best_score = score
+                    best_intent = intent_name
+
+        # 2. Check overlap against reference lists in BANKING_ROUTES
+        if best_intent == "unknown":
+            for route in BANKING_ROUTES:
+                for ref in route.references:
+                    ref_tokens = set(re.findall(r'\b\w+\b', ref.lower()))
+                    if not ref_tokens:
+                        continue
+                    overlap = len(tokens.intersection(ref_tokens)) / len(ref_tokens)
+                    if overlap > 0.4 and overlap > best_score:
+                        best_score = round(overlap, 2)
+                        best_intent = route.name
+
+        if best_intent != "unknown":
+            metadata = {}
+            for r in BANKING_ROUTES:
+                if r.name == best_intent:
+                    metadata = r.metadata
+                    break
+
+            confidence = "high" if best_score >= 0.75 else "medium"
+            return {
+                "intent": best_intent,
+                "score": best_score,
+                "confidence": confidence,
+                "metadata": metadata,
+                "topK": [{"intent": best_intent, "score": best_score}],
+                "threshold": None
+            }
+
+        return {
+            "intent": "unknown",
+            "score": 0.0,
+            "confidence": "none",
+            "metadata": {},
+            "topK": [],
+            "threshold": None
+        }
+
     def _route_text_llm(self, text: str) -> Dict:
         """Fallback LLM-based intent classifier using Groq"""
         from groq_client import chat_completion, extract_groq_text
@@ -202,12 +330,7 @@ Classify the user's message into exactly one of the following intents:
 - 'spending_analysis' (questions about monthly spending, outflow, where money was spent, budget audit, spending breakdown)
 - 'unknown' (if the message does not fit any of the banking intents above)
 
-You must output ONLY a valid JSON object with the following keys. Do not include any markdown, triple backticks, or explanation. Just the JSON object.
-{{
-  "intent": "intent_name",
-  "confidence": "high" | "medium" | "low",
-  "score": 0.0 to 1.0
-}}
+Output JSON only: {{"intent": "intent_name", "confidence": "high"|"medium"|"low", "score": 0.0 to 1.0}}
 
 User Message: "{query}"
 """
@@ -224,14 +347,13 @@ User Message: "{query}"
                     }
                 ],
                 temperature=0.0,
-                max_tokens=150
+                max_tokens=100
             )
             
             output_text = extract_groq_text(response).strip()
             # Clean up potential markdown formatting in LLM output
             if output_text.startswith("```"):
                 lines = output_text.splitlines()
-                # Find JSON block
                 json_lines = [l for l in lines if not l.startswith("```")]
                 output_text = "".join(json_lines)
             
@@ -240,7 +362,6 @@ User Message: "{query}"
             confidence = result.get("confidence", "low")
             score = result.get("score", 0.5)
             
-            # Find the route metadata
             metadata = {}
             for r in BANKING_ROUTES:
                 if r.name == intent:
@@ -269,14 +390,11 @@ User Message: "{query}"
     def route_text(self, text: str) -> Dict:
         """
         Route user text to appropriate banking intent
-        
-        Args:
-            text: User query
-            
-        Returns:
-            Dict with: {intent, score, confidence, metadata, topK}
         """
         if not self.redis_available or not self.router:
+            local_res = self._route_text_local_semantic(text)
+            if local_res["intent"] != "unknown":
+                return local_res
             return self._route_text_llm(text)
             
         try:

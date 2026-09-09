@@ -1,4 +1,6 @@
 import os
+import sys
+import time
 import requests
 from typing import Any, Dict, List, Optional
 
@@ -44,12 +46,21 @@ def chat_completion(
     }
 
     endpoint = get_groq_endpoint(model)
-    print(f"Groq request: model={payload['model']}, endpoint={endpoint}")
-    response = requests.post(endpoint, json=payload, headers=headers, timeout=30)
-
-    if response.status_code != 200:
-        print(f"Groq request failed ({response.status_code}): {response.text}")
-
+    max_retries = 2
+    for attempt in range(max_retries):
+        response = requests.post(endpoint, json=payload, headers=headers, timeout=10)
+        if response.status_code == 429:
+            # If daily rate limit (RPD) or tokens per day (TPD) is reached, fail fast so fallback executes immediately
+            if "requests per day" in response.text.lower() or "tokens per day" in response.text.lower():
+                print(f"[WARN] Groq daily limit reached. Triggering immediate fallback.")
+                response.raise_for_status()
+            if attempt < max_retries - 1:
+                time.sleep(1.0)
+                continue
+        if response.status_code != 200:
+            print(f"Groq request failed ({response.status_code}): {response.text}")
+        response.raise_for_status()
+        return response.json()
     response.raise_for_status()
     return response.json()
 

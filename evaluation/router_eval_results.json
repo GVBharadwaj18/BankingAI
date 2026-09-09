@@ -1,0 +1,166 @@
+{
+  "timestamp": "2026-09-09 20:19:18",
+  "total_cases": 110,
+  "intent_routing_accuracy_pct": 91.82,
+  "tool_handler_accuracy_pct": 91.82,
+  "unknown_query_metrics": {
+    "precision_pct": 100.0,
+    "recall_pct": 83.33,
+    "f1_score": 90.91
+  },
+  "latency_stats_ms": {
+    "avg_ms": 36.06,
+    "p95_ms": 302.98,
+    "min_ms": 0.06,
+    "max_ms": 757.77
+  },
+  "per_intent_metrics": {
+    "credit_card": {
+      "expected_count": 15,
+      "predicted_count": 14,
+      "correct_count": 13,
+      "accuracy_pct": 86.67,
+      "precision_pct": 92.86,
+      "recall_pct": 86.67,
+      "f1_score": 89.66
+    },
+    "loan": {
+      "expected_count": 15,
+      "predicted_count": 18,
+      "correct_count": 15,
+      "accuracy_pct": 100.0,
+      "precision_pct": 83.33,
+      "recall_pct": 100.0,
+      "f1_score": 90.91
+    },
+    "savings_fd": {
+      "expected_count": 15,
+      "predicted_count": 15,
+      "correct_count": 14,
+      "accuracy_pct": 93.33,
+      "precision_pct": 93.33,
+      "recall_pct": 93.33,
+      "f1_score": 93.33
+    },
+    "policy_faq": {
+      "expected_count": 15,
+      "predicted_count": 13,
+      "correct_count": 12,
+      "accuracy_pct": 80.0,
+      "precision_pct": 92.31,
+      "recall_pct": 80.0,
+      "f1_score": 85.71
+    },
+    "forex_travel": {
+      "expected_count": 15,
+      "predicted_count": 14,
+      "correct_count": 13,
+      "accuracy_pct": 86.67,
+      "precision_pct": 92.86,
+      "recall_pct": 86.67,
+      "f1_score": 89.66
+    },
+    "fraud_dispute": {
+      "expected_count": 15,
+      "predicted_count": 15,
+      "correct_count": 15,
+      "accuracy_pct": 100.0,
+      "precision_pct": 100.0,
+      "recall_pct": 100.0,
+      "f1_score": 100.0
+    },
+    "spending_analysis": {
+      "expected_count": 10,
+      "predicted_count": 9,
+      "correct_count": 9,
+      "accuracy_pct": 90.0,
+      "precision_pct": 100.0,
+      "recall_pct": 90.0,
+      "f1_score": 94.74
+    },
+    "unknown": {
+      "expected_count": 10,
+      "predicted_count": 12,
+      "correct_count": 10,
+      "accuracy_pct": 100.0,
+      "precision_pct": 83.33,
+      "recall_pct": 100.0,
+      "f1_score": 90.91
+    }
+  },
+  "total_failures": 9,
+  "failures": [
+    {
+      "id": "TC-021",
+      "query": "My annual income is 1200000, which card can I get?",
+      "expected_intent": "credit_card",
+      "predicted_intent": "loan",
+      "score": 0.5,
+      "confidence": "medium"
+    },
+    {
+      "id": "TC-023",
+      "query": "What are the credit card eligibility criteria for salary 800000?",
+      "expected_intent": "credit_card",
+      "predicted_intent": "loan",
+      "score": 0.7999999999999999,
+      "confidence": "high"
+    },
+    {
+      "id": "TC-039",
+      "query": "What interest rate do senior citizens get on fixed deposits?",
+      "expected_intent": "savings_fd",
+      "predicted_intent": "loan",
+      "score": 0.5,
+      "confidence": "medium"
+    },
+    {
+      "id": "TC-049",
+      "query": "How can I close my bank savings account?",
+      "expected_intent": "policy_faq",
+      "predicted_intent": "savings_fd",
+      "score": 0.7999999999999999,
+      "confidence": "high"
+    },
+    {
+      "id": "TC-053",
+      "query": "What is the daily ATM cash withdrawal limit?",
+      "expected_intent": "policy_faq",
+      "predicted_intent": "unknown",
+      "score": 0.0,
+      "confidence": "none"
+    },
+    {
+      "id": "TC-060",
+      "query": "How to register for SMS banking alerts?",
+      "expected_intent": "policy_faq",
+      "predicted_intent": "forex_travel",
+      "score": 0.43,
+      "confidence": "medium"
+    },
+    {
+      "id": "TC-069",
+      "query": "What are the markup charges on international debit card transactions?",
+      "expected_intent": "forex_travel",
+      "predicted_intent": "policy_faq",
+      "score": 0.8,
+      "confidence": "high"
+    },
+    {
+      "id": "TC-072",
+      "query": "Can I buy foreign currency cash before traveling?",
+      "expected_intent": "forex_travel",
+      "predicted_intent": "unknown",
+      "score": 0.0,
+      "confidence": "none"
+    },
+    {
+      "id": "TC-099",
+      "query": "Summarize my credit card spending for this month",
+      "expected_intent": "spending_analysis",
+      "predicted_intent": "credit_card",
+      "score": 0.7999999999999999,
+      "confidence": "high"
+    }
+  ]
+}
