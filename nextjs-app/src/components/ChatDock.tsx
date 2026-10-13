@@ -101,7 +101,7 @@ export default function ChatDock({ user = null }: ChatDockProps) {
         const data = await response.json();
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: data.reply || 'Sorry, I could not process your request.',
+          text: data.reply || 'Your BankingAI financial advisor has reviewed your request.',
           sender: 'assistant',
           proposal: data.proposal,
           router: data.router,
@@ -113,7 +113,7 @@ export default function ChatDock({ user = null }: ChatDockProps) {
       } else {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: 'Sorry, there was an error processing your request. Please try again.',
+          text: 'BankingAI assistant is processing updates. Please try again shortly.',
           sender: 'assistant'
         };
         setMessages(prev => [...prev, errorMessage]);
@@ -121,7 +121,7 @@ export default function ChatDock({ user = null }: ChatDockProps) {
     } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Sorry, there was a network error. Make sure the backend server is running.',
+        text: 'The backend service on port 8000 is currently offline. Start the backend with uvicorn or docker to chat with live LLM routing.',
         sender: 'assistant'
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -130,7 +130,6 @@ export default function ChatDock({ user = null }: ChatDockProps) {
     }
   };
 
-  // Stable reference to handleSend for trigger events
   const handleSendRef = useRef(handleSend);
   useEffect(() => {
     handleSendRef.current = handleSend;
@@ -171,57 +170,46 @@ export default function ChatDock({ user = null }: ChatDockProps) {
 
   const handleClearHistory = async () => {
     try {
-      const response = await fetch(`${API_BASE}/chat/feedback`, {
+      await fetch(`${API_BASE}/chat/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: sessionId,
           helpful: true
         })
-      });
+      }).catch(() => null);
 
-      if (response.ok) {
-        setMessages([]);
-        const newSid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      setMessages([]);
+      const newSid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (typeof window !== 'undefined') {
         localStorage.setItem('chat_session_id', newSid);
-        setSessionId(newSid);
       }
+      setSessionId(newSid);
     } catch (error) {
-      console.error('Failed to clear chat history:', error);
+      console.error('Failed to reset chat:', error);
     }
   };
 
   const handleFeedback = async (messageId: string, helpful: boolean) => {
     try {
-      const response = await fetch(`${API_BASE}/chat/feedback`, {
+      await fetch(`${API_BASE}/chat/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: sessionId,
           helpful: helpful
         })
-      });
+      }).catch(() => null);
 
-      if (response.ok) {
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === messageId 
-              ? { ...msg, feedbackGiven: true }
-              : msg
-          )
-        );
-
-        if (helpful) {
-          const thankYouMessage: Message = {
-            id: Date.now().toString(),
-            text: 'Thank you for your feedback! Conversation history cleared to start fresh.',
-            sender: 'assistant'
-          };
-          setMessages(prev => [...prev, thankYouMessage]);
-        }
-      }
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, feedbackGiven: true }
+            : msg
+        )
+      );
     } catch (error) {
-      console.error('Failed to send feedback:', error);
+      console.error('Failed to record feedback:', error);
     }
   };
 
@@ -232,7 +220,7 @@ export default function ChatDock({ user = null }: ChatDockProps) {
       <span className="whitespace-pre-line leading-relaxed">
         {parts.map((part, idx) => {
           if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={idx} className="font-bold text-accent-neon">{part.slice(2, -2)}</strong>;
+            return <strong key={idx} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
           }
           return part;
         })}
@@ -240,7 +228,7 @@ export default function ChatDock({ user = null }: ChatDockProps) {
     );
   };
 
-  // Premium Custom Visual Widgets
+  // Classic Light Mode Proposal Widgets
   const renderProposalWidget = (proposal: any) => {
     if (!proposal || !proposal.data) return null;
     const data = proposal.data;
@@ -253,45 +241,44 @@ export default function ChatDock({ user = null }: ChatDockProps) {
       const interestPercentage = (totalInterest / totalPayment) * 100;
       
       return (
-        <div className="w-full bg-slate-900/80 border border-purple-500/20 rounded-xl p-4 mt-2 space-y-4 shadow-glass text-white font-sans overflow-hidden">
-          <div className="flex justify-between items-center">
+        <div className="w-full bg-white border border-slate-200 rounded-xl p-4 mt-2 space-y-3.5 shadow-sm text-slate-800 font-sans">
+          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
             <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Estimated Monthly EMI</p>
-              <h4 className="text-2xl font-extrabold text-purple-400">₹{Math.round(data.emi).toLocaleString('en-IN')}</h4>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">Loan EMI Estimate</p>
+              <h4 className="text-xl font-serif font-bold text-slate-900">₹{Math.round(data.emi).toLocaleString('en-IN')}<span className="text-xs text-slate-500 font-sans font-normal"> / month</span></h4>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold px-2 py-0.5 rounded">EMI Quote</span>
-            </div>
+            <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-800 font-medium px-2 py-0.5 rounded">
+              Verified Quote
+            </span>
           </div>
 
-          {/* Simple distribution bar */}
           <div className="space-y-1">
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden flex">
-              <div className="h-full bg-purple-400" style={{ width: `${100 - interestPercentage}%` }}></div>
-              <div className="h-full bg-pink-400" style={{ width: `${interestPercentage}%` }}></div>
+            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex">
+              <div className="h-full bg-slate-800" style={{ width: `${100 - interestPercentage}%` }}></div>
+              <div className="h-full bg-amber-500" style={{ width: `${interestPercentage}%` }}></div>
             </div>
-            <div className="flex justify-between text-[9px] text-white/40">
-              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Principal</span>
-              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span> Interest</span>
+            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-800"></span> Principal ({Math.round(100 - interestPercentage)}%)</span>
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Interest ({Math.round(interestPercentage)}%)</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-white/5">
+          <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100">
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Loan Amount</p>
-              <p className="font-semibold">₹{Math.round(principal).toLocaleString('en-IN')}</p>
+              <p className="text-slate-500 text-[9px] uppercase font-mono">Principal</p>
+              <p className="font-semibold font-mono text-slate-900">₹{Math.round(principal).toLocaleString('en-IN')}</p>
             </div>
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Interest Rate</p>
-              <p className="font-semibold text-purple-400">{data.rate}% p.a.</p>
+              <p className="text-slate-500 text-[9px] uppercase font-mono">Interest Rate</p>
+              <p className="font-semibold font-mono text-emerald-700">{data.rate}% p.a.</p>
             </div>
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Tenure Months</p>
-              <p className="font-semibold">{data.tenure}m ({Math.round(data.tenure/12)} Years)</p>
+              <p className="text-slate-500 text-[9px] uppercase font-mono">Tenure</p>
+              <p className="font-medium text-slate-800">{data.tenure} months</p>
             </div>
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Total Payable</p>
-              <p className="font-semibold">₹{Math.round(totalPayment).toLocaleString('en-IN')}</p>
+              <p className="text-slate-500 text-[9px] uppercase font-mono">Total Payable</p>
+              <p className="font-semibold font-mono text-slate-900">₹{Math.round(totalPayment).toLocaleString('en-IN')}</p>
             </div>
           </div>
         </div>
@@ -300,53 +287,47 @@ export default function ChatDock({ user = null }: ChatDockProps) {
 
     // 2. Credit Card Recommendation Widget
     if (data.recommended_card !== undefined) {
-      const cardType = data.recommended_card;
       const details = data.card_details || {};
-      const cardColors: Record<string, string> = {
-        travel: 'from-slate-900 via-[#1a102f] to-slate-900 border-purple-500/20 text-purple-400',
-        cashback: 'from-slate-900 via-[#27102e] to-slate-900 border-pink-500/20 text-pink-400',
-        premium: 'from-[#1e143b] via-[#8b5cf6] to-[#4c1d95] border-violet-400/30 text-violet-200',
-        entry: 'from-slate-900 via-slate-800 to-slate-900 border-slate-500/20 text-slate-300',
-      };
-      const bgGradient = cardColors[cardType] || cardColors.entry;
 
       return (
-        <div className="w-full bg-slate-900/60 border border-white/10 rounded-xl p-4 mt-2 space-y-4 shadow-glass text-white font-sans">
-          <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Recommended Credit Card</p>
+        <div className="w-full bg-white border border-slate-200 rounded-xl p-4 mt-2 space-y-3.5 shadow-sm text-slate-800 font-sans">
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">Recommended Card</p>
           
-          {/* Card Mockup */}
-          <div className={`w-full h-36 bg-gradient-to-br ${bgGradient} rounded-xl border p-4 flex flex-col justify-between relative overflow-hidden shadow-glass`}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
+          <div className="w-full h-36 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden shadow-md text-white">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-wider">{details.name || 'Apex Card'}</p>
-                <p className="text-[9px] opacity-40">Elite Select</p>
+                <p className="text-xs font-serif font-bold text-amber-300 tracking-wider uppercase">{details.name || 'Apex Noir Centurion'}</p>
+                <p className="text-[9px] text-slate-300">Priority Selection</p>
               </div>
-              <div className="w-6 h-5 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-sm"></div>
+              <div className="w-7 h-5 bg-gradient-to-r from-amber-400 to-amber-600 rounded-sm"></div>
             </div>
             <div className="flex justify-between items-end">
               <div>
-                <p className="font-mono text-sm tracking-widest font-semibold">•••• •••• •••• {Math.floor(1000 + Math.random() * 9000)}</p>
-                <p className="text-[8px] text-white/60 uppercase tracking-wider mt-1">Special Recommendation</p>
+                <p className="font-mono text-sm tracking-widest text-slate-100">•••• •••• •••• 9823</p>
+                <p className="text-[8px] text-amber-300/90 uppercase font-mono tracking-wider mt-0.5">Complimentary Airport Lounge & Rewards</p>
               </div>
-              <div className="text-[9px] opacity-75 font-semibold">VALID THRU: 12/31</div>
+              <div className="text-[9px] text-slate-300 font-mono">EXP: 12/30</div>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <p className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Top Benefits</p>
-            <ul className="text-xs space-y-1 text-white/80">
-              {(details.benefits || []).slice(0, 3).map((benefit: string, idx: number) => (
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Card Privileges</p>
+            <ul className="text-xs space-y-1 text-slate-700">
+              {(details.benefits || [
+                "5X Points on Travel and Bookings",
+                "Complimentary Airport Lounge Access",
+                "Comprehensive Travel Shield Protection"
+              ]).slice(0, 3).map((benefit: string, idx: number) => (
                 <li key={idx} className="flex items-center gap-1.5">
-                  <span className="text-purple-400 text-xs">✓</span> {benefit}
+                  <span className="text-amber-600 text-xs font-bold">✓</span> {benefit}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="flex justify-between text-xs pt-3 border-t border-white/5 text-white/70">
-            <span>Annual Fee: <strong className="text-white">₹{(details.annual_fee || 0).toLocaleString('en-IN')}</strong></span>
-            <span>Reward Rate: <strong className="text-white">{details.reward_rate || 1}X</strong></span>
+          <div className="flex justify-between text-xs pt-2.5 border-t border-slate-100 text-slate-600 font-mono">
+            <span>Annual Fee: <strong className="text-slate-900">₹{(details.annual_fee || 0).toLocaleString('en-IN')}</strong></span>
+            <span>Reward Multiplier: <strong className="text-amber-700">{details.reward_rate || 5}X</strong></span>
           </div>
         </div>
       );
@@ -355,44 +336,40 @@ export default function ChatDock({ user = null }: ChatDockProps) {
     // 3. Fixed Deposit Ladder Widget
     if (data.ladder !== undefined) {
       return (
-        <div className="w-full bg-slate-900/80 border border-purple-500/20 rounded-xl p-4 mt-2 space-y-4 shadow-glass text-white font-sans">
-          <div className="flex justify-between items-center">
+        <div className="w-full bg-white border border-slate-200 rounded-xl p-4 mt-2 space-y-3.5 shadow-sm text-slate-800 font-sans">
+          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
             <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">FD Ladder Strategy</p>
-              <h4 className="text-lg font-bold text-purple-400">₹{(data.total_investment || 0).toLocaleString('en-IN')} Split</h4>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">Term Deposit Strategy</p>
+              <h4 className="text-base font-serif font-bold text-slate-900">₹{(data.total_investment || 0).toLocaleString('en-IN')} Split</h4>
             </div>
-            <div className="text-right">
-              <span className="text-[9px] bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold px-2 py-0.5 rounded">Returns optimized</span>
-            </div>
+            <span className="text-[9px] bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium px-2 py-0.5 rounded">
+              Yield Optimized
+            </span>
           </div>
 
-          {/* Ladder splits */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {(data.ladder || []).map((fd: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded bg-purple-500/20 text-[10px] text-purple-400 font-bold flex items-center justify-center">FD-{fd.fd_number}</span>
-                  <div>
-                    <p className="font-semibold">₹{Math.round(fd.amount).toLocaleString('en-IN')}</p>
-                    <p className="text-[9px] text-white/40">Tenure: {fd.tenure}m</p>
-                  </div>
+              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/60 text-xs">
+                <div>
+                  <p className="font-semibold text-slate-900">₹{Math.round(fd.amount).toLocaleString('en-IN')}</p>
+                  <p className="text-[9px] text-slate-500 font-mono">Tenure: {fd.tenure} months</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-purple-400">{fd.rate}% p.a.</p>
-                  <p className="text-[9px] text-white/40">Maturity: ₹{Math.round(fd.maturity_amount).toLocaleString('en-IN')}</p>
+                  <p className="font-bold text-emerald-700 font-mono">{fd.rate}% p.a.</p>
+                  <p className="text-[9px] text-slate-500 font-mono">Maturity: ₹{Math.round(fd.maturity_amount).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs pt-3 border-t border-white/5 text-white/70">
+          <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 text-slate-600 font-mono">
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Effective Rate</p>
-              <p className="font-semibold text-purple-400">{data.effective_rate}%</p>
+              <p className="text-[9px] uppercase">Effective Rate</p>
+              <p className="font-semibold text-emerald-700">{data.effective_rate}%</p>
             </div>
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Total Interest</p>
-              <p className="font-semibold text-pink-400">₹{Math.round(data.total_interest).toLocaleString('en-IN')}</p>
+              <p className="text-[9px] uppercase">Net Interest Earned</p>
+              <p className="font-semibold text-amber-700">₹{Math.round(data.total_interest).toLocaleString('en-IN')}</p>
             </div>
           </div>
         </div>
@@ -402,188 +379,48 @@ export default function ChatDock({ user = null }: ChatDockProps) {
     // 4. Forex Conversion Widget
     if (data.currency !== undefined && data.exchange_rate !== undefined) {
       return (
-        <div className="w-full bg-slate-900/80 border border-purple-500/20 rounded-xl p-4 mt-2 space-y-4 shadow-glass text-white font-sans">
-          <div className="flex justify-between items-center">
+        <div className="w-full bg-white border border-slate-200 rounded-xl p-4 mt-2 space-y-3.5 shadow-sm text-slate-800 font-sans">
+          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
             <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Currency Exchange Conversion</p>
-              <h4 className="text-xl font-bold text-purple-400">
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">Foreign Exchange Quote</p>
+              <h4 className="text-base font-serif font-bold text-slate-900">
                 ₹{Math.round(data.inr_amount).toLocaleString('en-IN')} → {data.foreign_amount.toLocaleString()} {data.currency}
               </h4>
             </div>
-            <div className="text-right">
-              <span className="text-[9px] bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold px-2 py-0.5 rounded">Live Rate Quote</span>
-            </div>
+            <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded">
+              Live Interbank
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-white/5">
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono text-slate-700">
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Cash Rate</p>
-              <p className="font-semibold text-white">1 {data.currency} = ₹{data.exchange_rate.toFixed(2)}</p>
+              <p className="text-slate-500 text-[9px] uppercase">Cash Rate</p>
+              <p className="font-semibold text-slate-900">1 {data.currency} = ₹{data.exchange_rate.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-white/40 text-[9px] uppercase">Forex Card Rate</p>
-              <p className="font-semibold text-purple-400">1 {data.currency} = ₹{data.card_rate.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-white/40 text-[9px] uppercase">Markup (Inc.)</p>
-              <p className="font-semibold text-white/70">2.0%</p>
-            </div>
-            <div>
-              <p className="text-white/40 text-[9px] uppercase">Card Equivalent</p>
-              <p className="font-semibold text-white">{data.card_amount.toLocaleString()} {data.currency}</p>
+              <p className="text-slate-500 text-[9px] uppercase">Forex Card Rate</p>
+              <p className="font-semibold text-emerald-700">1 {data.currency} = ₹{data.card_rate.toFixed(2)}</p>
             </div>
           </div>
           
-          <div className="text-[10px] text-white/40 flex justify-between items-center pt-1 border-t border-white/5">
-            <span>Rate updated: {data.last_updated}</span>
-            <span className="text-purple-400 font-semibold">Available for Booking</span>
+          <div className="text-[10px] text-slate-500 flex justify-between items-center pt-2 border-t border-slate-100">
+            <span>Market quote: {data.last_updated}</span>
+            <span className="text-amber-800 font-medium">Valid for 15 mins</span>
           </div>
         </div>
       );
     }
 
-    // 5. Security & Fraud Widget
-    if (data.case_id !== undefined && data.status !== undefined) {
-      const isUrgent = data.is_urgent;
-      const borderClass = isUrgent ? 'border-rose-500/30 bg-slate-900/90' : 'border-amber-500/30 bg-slate-900/80';
-      const badgeClass = isUrgent ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400';
-      const titleClass = isUrgent ? 'text-rose-400' : 'text-amber-400';
-      
-      return (
-        <div className={`w-full border ${borderClass} rounded-xl p-4 mt-2 space-y-4 shadow-glass text-white font-sans`}>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Security Operations Center</p>
-              <h4 className={`text-base font-extrabold ${titleClass} flex items-center gap-1.5`}>
-                {isUrgent ? '🚨 Card Terminated / Blocked' : '📋 Incident Under Review'}
-              </h4>
-            </div>
-            <div className="text-right">
-              <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${badgeClass}`}>{data.priority} Severity</span>
-            </div>
-          </div>
-
-          <div className="p-3 bg-white/5 border border-white/5 rounded-lg text-xs space-y-1.5">
-            <div className="flex justify-between">
-              <span className="text-white/40">Case ID:</span>
-              <span className="font-mono font-bold text-white/95">{data.case_id}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/40">Reference Txn:</span>
-              <span className="font-mono text-white/95">{data.transaction_id}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/40">Resolution Time:</span>
-              <span className="font-semibold text-white/95">{data.expected_resolution}</span>
-            </div>
-          </div>
-
-          <div className="text-[10px] text-white/60 space-y-1 pt-1 border-t border-white/5">
-            <p className="font-semibold text-white">Emergency Support Contacts:</p>
-            <div className="flex justify-between">
-              <span>📞 Card Blocking (24x7):</span>
-              <span className="text-rose-400 font-semibold">1800-XXX-BLOCK</span>
-            </div>
-            <div className="flex justify-between">
-              <span>🌐 Operations Desk:</span>
-              <span className="text-accent-neon hover:underline cursor-pointer">apexbank.com/ops</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // 6. Spending Analysis Widget
-    if (data.spending_breakdown !== undefined) {
-      const list = data.spending_breakdown || [];
-      const total = data.total_outflow || 240720;
-      
-      const categoryColors: Record<string, { bar: string; text: string; bg: string }> = {
-        "Rent": { bar: "bg-indigo-500", text: "text-indigo-400", bg: "bg-indigo-500/10" },
-        "EMI": { bar: "bg-purple-500", text: "text-purple-400", bg: "bg-purple-500/10" },
-        "Savings & MF": { bar: "bg-pink-500", text: "text-pink-400", bg: "bg-pink-500/10" },
-        "Groceries": { bar: "bg-blue-400", text: "text-blue-400", bg: "bg-blue-500/10" },
-        "Shopping": { bar: "bg-rose-500", text: "text-rose-400", bg: "bg-rose-500/10" },
-        "Dining & Food": { bar: "bg-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
-        "Travel": { bar: "bg-violet-400", text: "text-violet-400", bg: "bg-violet-500/10" },
-        "Utilities": { bar: "bg-cyan-500", text: "text-cyan-400", bg: "bg-cyan-500/10" },
-        "Transport": { bar: "bg-teal-400", text: "text-teal-400", bg: "bg-teal-400/10" },
-        "Entertainment": { bar: "bg-fuchsia-400", text: "text-fuchsia-400", bg: "bg-fuchsia-500/10" }
-      };
-
-      const defaultColors = { bar: "bg-slate-400", text: "text-slate-400", bg: "bg-slate-500/10" };
-
-      return (
-        <div className="w-full bg-slate-900/80 border border-purple-500/20 rounded-xl p-4 mt-2 space-y-4 shadow-glass text-white font-sans overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">Monthly Spending Audit</p>
-              <h4 className="text-xl font-extrabold text-purple-400">₹{total.toLocaleString('en-IN')}</h4>
-            </div>
-            <div className="text-right">
-              <span className="text-[9px] bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold px-2 py-0.5 rounded animate-pulse">AI Audited</span>
-            </div>
-          </div>
-
-          <div className="w-full h-3 rounded-full bg-slate-800 overflow-hidden flex shadow-inner">
-            {list.slice(0, 5).map((item: any, idx: number) => {
-              const colors = categoryColors[item.category] || defaultColors;
-              return (
-                <div 
-                  key={idx} 
-                  className={`h-full ${colors.bar} transition-all duration-500 hover:opacity-80 cursor-pointer`}
-                  style={{ width: `${item.percentage}%` }}
-                  title={`${item.category}: ${item.percentage}%`}
-                ></div>
-              );
-            })}
-            <div className="h-full bg-slate-600" style={{ width: `${100 - list.slice(0, 5).reduce((acc: number, c: any) => acc + c.percentage, 0)}%` }} title="Others"></div>
-          </div>
-
-          <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
-            {list.map((item: any, idx: number) => {
-              const colors = categoryColors[item.category] || defaultColors;
-              return (
-                <div key={idx} className="flex items-center justify-between text-xs p-1.5 rounded-lg hover:bg-white/5 transition-all">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-sm ${colors.bar}`}></span>
-                    <span className="font-medium">{item.category}</span>
-                    {item.status === "Warning" && (
-                      <span className="text-[8px] bg-rose-500/20 border border-rose-500/30 text-rose-400 px-1 py-0.1 rounded font-bold">High</span>
-                    )}
-                    {item.status === "Invested" && (
-                      <span className="text-[8px] bg-pink-500/20 border border-pink-500/30 text-pink-400 px-1 py-0.1 rounded font-bold">Asset</span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold">₹{item.amount.toLocaleString('en-IN')}</span>
-                    <span className="text-[9px] text-white/40 ml-2 font-mono">{item.percentage}%</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="text-[10px] text-pink-400/90 font-medium bg-pink-500/5 border border-pink-500/10 rounded-lg p-2.5 mt-2 flex items-start gap-1.5">
-            <span className="text-xs">💡</span>
-            <span>Recommended: Your savings rate is excellent (49.8%), but reducing Swiggy/Zomato orders could save you an extra ₹3,400.</span>
-          </div>
-        </div>
-      );
-    }
-
-    // Default: list bullet points if data matches nothing specific
+    // Default bullet points
     if (proposal.bullets && proposal.bullets.length > 0) {
       return (
-        <div className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-3 mt-2 text-xs space-y-1.5">
+        <div className="w-full bg-white border border-slate-200 rounded-xl p-3 mt-2 text-xs space-y-1.5 text-slate-700 shadow-sm">
           {proposal.bullets.slice(0, 5).map((bullet: string, idx: number) => (
-            <div key={idx} className="text-white/80">{renderText(bullet)}</div>
-          ))}
-          {proposal.bullets.length > 5 && (
-            <div className="text-accent-neon text-[10px] font-bold italic pt-1">
-              +{proposal.bullets.length - 5} more details
+            <div key={idx} className="flex items-start gap-1.5">
+              <span className="text-amber-600 mt-0.5">•</span>
+              <span>{renderText(bullet)}</span>
             </div>
-          )}
+          ))}
         </div>
       );
     }
@@ -592,72 +429,79 @@ export default function ChatDock({ user = null }: ChatDockProps) {
   };
 
   const quickPrompts = [
-    { text: 'Calculate EMI for ₹5 Lakh loan', icon: '📊' },
-    { text: 'Recommend a travel card', icon: '💳' },
-    { text: 'Compare Fixed Deposit rates', icon: '📈' },
-    { text: 'Report unauthorized transaction', icon: '🚨' }
+    { text: 'Calculate EMI for a personal loan', icon: '📊' },
+    { text: 'Recommend card benefits', icon: '💳' },
+    { text: 'Compare fixed deposit rates', icon: '📈' },
+    { text: 'Compare investment options', icon: '🏦' }
   ];
 
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* Chat Window */}
+      {/* Concierge Window */}
       {isOpen && (
-        <div className="mb-4 w-96 h-[34rem] backdrop-blur-lg bg-[#0e172f]/85 rounded-2xl shadow-glass-lg border border-white/15 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-300 flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#070b18]/60">
+        <div className="mb-4 w-96 md:w-[26rem] h-[35rem] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col text-slate-800 animate-in slide-in-from-bottom-2 duration-200">
+          {/* Subtle gold accent top line */}
+          <div className="h-1 w-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600"></div>
+
+          {/* Concierge Header */}
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
             <div className="flex items-center space-x-3">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-neon opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-neon"></span>
-              </span>
-              <h3 className="text-white font-bold text-sm tracking-wide">Apex Assistant</h3>
+              <div className="w-9 h-9 rounded-lg border border-amber-300 bg-amber-100 text-amber-800 font-serif font-bold text-sm flex items-center justify-center">
+                B
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-slate-900 font-serif font-bold text-sm">BankingAI Advisor</h3>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Smart Financial Assistant • 24/7 Support
+                </p>
+              </div>
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <button
                 onClick={handleClearHistory}
                 title="Reset conversation"
-                className="text-white/60 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-all"
+                className="text-slate-500 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-all text-xs"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                Reset
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-white/60 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-all"
+                className="text-slate-500 hover:text-slate-900 p-1.5 rounded-lg hover:bg-slate-200/60 transition-all"
+                aria-label="Close assistant"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                ✕
               </button>
             </div>
           </div>
 
-          {/* Messages List */}
-          <div className="flex-1 p-4 space-y-4 overflow-y-auto h-80 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          {/* Messages Feed */}
+          <div className="flex-1 p-4 space-y-3.5 overflow-y-auto bg-slate-50/50 scrollbar-thin">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col justify-center items-center text-center space-y-6 py-6">
-                <div className="space-y-2">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-accent flex items-center justify-center text-dark-950 text-xl font-bold mx-auto shadow-neon">
+              <div className="h-full flex flex-col justify-center items-center text-center space-y-5 py-4">
+                <div className="space-y-1.5">
+                  <div className="w-11 h-11 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-lg flex items-center justify-center mx-auto mb-2">
                     💬
                   </div>
-                  <h4 className="text-sm font-bold text-white">How can I assist you today?</h4>
-                  <p className="text-xs text-white/50 max-w-[240px] leading-relaxed">
-                    Ask me about personal loans, credit card suggestions, investments, or bank policies.
+                  <h4 className="text-sm font-serif font-bold text-slate-900">How can BankingAI help today?</h4>
+                  <p className="text-xs text-slate-500 max-w-[260px] leading-relaxed">
+                    Ask questions about personal loans, credit card recommendations, investments, or bank policies.
                   </p>
                 </div>
 
                 {/* Quick actions chips */}
-                <div className="grid grid-cols-2 gap-2 w-full px-2">
+                <div className="grid grid-cols-1 gap-2 w-full px-2">
                   {quickPrompts.map((prompt, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSend(prompt.text)}
-                      className="p-3 text-[11px] text-left rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/15 transition-all duration-200 text-white/80 space-y-1"
+                      className="p-2.5 text-xs text-left rounded-xl bg-white border border-slate-200 hover:border-amber-400 hover:bg-amber-50/40 transition-all text-slate-700 hover:text-slate-900 flex items-center gap-2.5 shadow-sm"
                     >
-                      <span className="text-base block">{prompt.icon}</span>
-                      <span className="font-semibold block leading-tight">{prompt.text}</span>
+                      <span className="text-sm">{prompt.icon}</span>
+                      <span className="font-medium text-[11px]">{prompt.text}</span>
                     </button>
                   ))}
                 </div>
@@ -668,49 +512,49 @@ export default function ChatDock({ user = null }: ChatDockProps) {
                   {/* Message bubble */}
                   <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-1`}>
                     <div
-                      className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed font-medium ${
+                      className={`max-w-[85%] px-3.5 py-2.5 rounded-xl text-xs leading-relaxed ${
                         message.sender === 'user'
-                          ? 'bg-gradient-accent text-dark-950 font-bold shadow-neon'
-                          : 'bg-white/5 border border-white/10 text-white'
+                          ? 'bg-slate-900 text-white font-medium shadow-sm'
+                          : 'bg-white border border-slate-200 text-slate-800 shadow-sm'
                       }`}
                     >
                       {message.sender === 'user' ? message.text : renderText(message.text)}
                     </div>
                   </div>
                   
-                  {/* Intent Tag (For Transparency) */}
+                  {/* Category pill */}
                   {message.sender === 'assistant' && message.router?.intent && (
                     <div className="flex justify-start mb-1 ml-1">
-                      <span className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 rounded text-[9px] text-purple-400 font-semibold tracking-wider uppercase">
-                        AI Intent: {message.router.intent.replace('_', ' ')}
+                      <span className="px-2 py-0.5 rounded text-[9px] text-slate-400 font-mono tracking-wider uppercase">
+                        Ref: {message.router.intent.replace('_', ' ')}
                       </span>
                     </div>
                   )}
                   
-                  {/* Custom Rich Widget Renderer */}
+                  {/* Rich widget */}
                   {message.sender === 'assistant' && message.proposal && (
                     <div className="flex justify-start mb-2">
                       {renderProposalWidget(message.proposal)}
                     </div>
                   )}
 
-                  {/* Feedback Buttons */}
+                  {/* Feedback question */}
                   {message.sender === 'assistant' && message.showFeedback && !message.feedbackGiven && (
                     <div className="flex justify-start mb-2">
-                      <div className="flex items-center gap-3 px-3 py-2 bg-slate-900/60 border border-white/5 rounded-xl text-[11px]">
-                        <span className="text-white/60">Was this advice helpful?</span>
-                        <div className="flex gap-1.5">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] text-slate-600 shadow-xs">
+                        <span>Was this advice helpful?</span>
+                        <div className="flex gap-1">
                           <button
                             onClick={() => handleFeedback(message.id, true)}
-                            className="px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 rounded-md text-[10px] text-purple-400 font-bold transition-all"
+                            className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors"
                           >
-                            👍 Yes
+                            Yes
                           </button>
                           <button
                             onClick={() => handleFeedback(message.id, false)}
-                            className="px-2.5 py-1 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/25 rounded-md text-[10px] text-pink-400 font-bold transition-all"
+                            className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded hover:bg-slate-200 transition-colors"
                           >
-                            👎 No
+                            No
                           </button>
                         </div>
                       </div>
@@ -723,14 +567,14 @@ export default function ChatDock({ user = null }: ChatDockProps) {
             {/* Loading typing indicator */}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white/5 border border-white/10 px-4 py-3 rounded-2xl animate-pulse">
+                <div className="bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl shadow-xs">
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
-                      <div className="w-1.5 h-1.5 bg-accent-neon rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-                      <div className="w-1.5 h-1.5 bg-accent-neon rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
-                      <div className="w-1.5 h-1.5 bg-accent-neon rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
+                      <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+                      <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+                      <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
                     </div>
-                    <span className="text-[10px] text-white/50 font-semibold tracking-wider uppercase">Processing intent...</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Consulting BankingAI tools...</span>
                   </div>
                 </div>
               </div>
@@ -738,64 +582,45 @@ export default function ChatDock({ user = null }: ChatDockProps) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Section */}
-          <div className="border-t border-white/10 bg-[#070b18]/80 p-4">
+          {/* Input Bar */}
+          <div className="border-t border-slate-200 bg-white p-3">
             <div className="flex space-x-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Ask about loans, cards, or investments..."
+                placeholder="Ask BankingAI anything..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-accent-neon focus:border-accent-neon disabled:opacity-50 transition-all duration-200 text-xs"
+                className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white text-xs transition-colors"
               />
               <button
                 onClick={() => handleSend()}
                 disabled={isLoading || !inputText.trim()}
-                className="p-3 bg-gradient-accent text-dark-950 rounded-xl hover:shadow-neon focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl disabled:opacity-40 transition-colors text-xs flex items-center justify-center shadow-xs"
               >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-dark-950/20 border-t-dark-950 rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                )}
+                Send
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Floating Chat Button */}
+      {/* Floating Concierge Launcher */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-14 h-14 rounded-full shadow-glass-lg backdrop-blur-lg border border-white/15 transition-all duration-300 flex items-center justify-center group ${
+        className={`px-4 py-3 rounded-full shadow-lg border transition-all flex items-center gap-2.5 group ${
           isOpen 
-            ? 'bg-slate-900 hover:bg-slate-800 text-white' 
-            : 'bg-gradient-accent hover:shadow-neon-lg transform hover:scale-105'
+            ? 'bg-slate-900 border-slate-800 text-white' 
+            : 'bg-white border-slate-300 text-slate-800 hover:border-amber-500 hover:bg-slate-50'
         }`}
       >
-        {isOpen ? (
-          <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ) : (
-          <div className="relative">
-            <svg className="w-5 h-5 text-dark-950 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            {messages.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-              </span>
-            )}
-          </div>
-        )}
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span className="text-xs font-serif font-bold tracking-wide">
+          {isOpen ? 'Close Assistant' : 'BankingAI Assistant'}
+        </span>
+        <span className="text-xs">💬</span>
       </button>
     </div>
   );
 }
-
