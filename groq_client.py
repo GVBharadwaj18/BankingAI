@@ -57,6 +57,10 @@ def chat_completion(
             if attempt < max_retries - 1:
                 time.sleep(1.0)
                 continue
+        if response.status_code == 404 and payload["model"] != "qwen/qwen3.8-27b":
+            print(f"[WARN] Groq model '{payload['model']}' not found (404). Falling back to 'qwen/qwen3.8-27b'...")
+            payload["model"] = "qwen/qwen3.8-27b"
+            continue
         if response.status_code != 200:
             print(f"Groq request failed ({response.status_code}): {response.text}")
         response.raise_for_status()
